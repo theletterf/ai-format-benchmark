@@ -1,10 +1,9 @@
 """
-LLM-based answering and judging via GitHub Models (OpenAI-compatible API).
+LLM-based answering and judging via Anthropic API.
 
-Answering model  : gpt-4o-mini   (small, fast; answers at default temperature
-                                   so each of the N_SAMPLES runs differs)
-Judging model    : gpt-4.5        (stronger; temperature=0 for determinism)
-Token counting   : tiktoken o200k_base — gpt-4o-mini's actual vocabulary
+Answering model  : claude-haiku-4-5  (fast, cheap; default temperature for variation)
+Judging model    : claude-sonnet-4-6  (stronger; temperature=0 for determinism)
+Token counting   : Anthropic count_tokens API — exact, model-native
 
 Each task is sampled N_SAMPLES times; scores are averaged to a float,
 which reduces the effect of single-call judge noise.
@@ -13,18 +12,12 @@ which reduces the effect of single-call judge noise.
 import json
 import re
 
-import tiktoken
-from openai import OpenAI
+import anthropic
 
-GITHUB_MODELS_BASE_URL = "https://models.inference.ai.azure.com"
+ANSWER_MODEL = "claude-haiku-4-5-20251001"
+JUDGE_MODEL  = "claude-sonnet-4-6"
 
-ANSWER_MODEL = "gpt-4o-mini"
-JUDGE_MODEL  = "gpt-4o"            # strongest model available on GitHub Models
-
-N_SAMPLES = 2                      # GitHub Models: 100 calls/model/day; 4 formats × 10 tasks × 2 = 80
-
-# gpt-4o-mini uses the o200k_base vocabulary (not cl100k_base used by gpt-4)
-_ENCODING = tiktoken.get_encoding("o200k_base")
+N_SAMPLES = 3
 
 _ANSWER_SYSTEM = (
     "You are a technical documentation assistant. "
@@ -57,44 +50,50 @@ Respond with valid JSON only — no markdown, no preamble:
 {{"score": <0|1|2>, "reasoning": "<one concise sentence>"}}"""
 
 
-def make_client(github_token: str) -> OpenAI:
-    return OpenAI(base_url=GITHUB_MODELS_BASE_URL, api_key=github_token)
+def make_client(api_key: str) -> anthropic.Anthropic:
+    return anthropic.Anthropic(api_key=api_key)
 
 
-def count_doc_tokens(doc_content: str) -> int:
-    """Count input tokens using tiktoken (local, free, correct vocab for gpt-4o-mini)."""
-    system_tokens = len(_ENCODING.encode(_ANSWER_SYSTEM))
-    user_tokens = len(
-        _ENCODING.encode(
-            f"<document>\n{doc_content}\n</document>\n\n"
-            "How many steps does this quickstart have?"
-        )
+def count_doc_tokens(client: anthropic.Anthropic, doc_content: str) -> int:
+    """Count input tokens using Anthropic's count_tokens API (exact, model-native)."""
+    response = client.messages.count_tokens(
+        model=ANSWER_MODEL,
+        system=_ANSWER_SYSTEM,
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    f"<document>\n{doc_content}\n</document>\n\n"
+                    "How many steps does this quickstart have?"
+                ),
+            }
+        ],
     )
-    return system_tokens + user_tokens
+    return response.input_tokens
 
 
 def answer_question(
-    client: OpenAI,
+    client: anthropic.Anthropic,
     doc_content: str,
     question: str,
 ) -> tuple[str, int]:
-    """Return (answer_text, completion_tokens). Uses default temperature for genuine variation."""
-    response = client.chat.completions.create(
+    """Return (answer_text, output_tokens). Default temperature for genuine variation."""
+    message = client.messages.create(
         model=ANSWER_MODEL,
         max_tokens=512,
+        system=_ANSWER_SYSTEM,
         messages=[
-            {"role": "system", "content": _ANSWER_SYSTEM},
             {
                 "role": "user",
                 "content": f"<document>\n{doc_content}\n</document>\n\n{question}",
-            },
+            }
         ],
     )
-    return response.choices[0].message.content, response.usage.completion_tokens
+    return message.content[0].text, message.usage.output_tokens
 
 
 def judge_answer(
-    client: OpenAI,
+    client: anthropic.Anthropic,
     question: str,
     ground_truth: str,
     answer: str,
@@ -105,16 +104,14 @@ def judge_answer(
         ground_truth=ground_truth,
         answer=answer,
     )
-    response = client.chat.completions.create(
+    message = client.messages.create(
         model=JUDGE_MODEL,
         max_tokens=256,
         temperature=0,
-        messages=[
-            {"role": "system", "content": _JUDGE_SYSTEM},
-            {"role": "user", "content": prompt},
-        ],
+        system=_JUDGE_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
     )
-    raw = response.choices[0].message.content.strip()
+    raw = message.content[0].text.strip()
     m = re.search(r"\{.*?\}", raw, re.DOTALL)
     if m:
         try:
@@ -125,7 +122,7 @@ def judge_answer(
 
 
 def evaluate_format(
-    client: OpenAI,
+    client: anthropic.Anthropic,
     format_name: str,
     doc_content: str,
     tasks: list[dict],
@@ -134,8 +131,8 @@ def evaluate_format(
     Run the full evaluation pipeline for one document format.
     Each task is answered and judged N_SAMPLES times; scores are averaged.
     """
-    print(f"    counting tokens (local)...", flush=True)
-    token_count = count_doc_tokens(doc_content)
+    print("    counting tokens (Anthropic API)...", flush=True)
+    token_count = count_doc_tokens(client, doc_content)
 
     task_results = []
     for task in tasks:

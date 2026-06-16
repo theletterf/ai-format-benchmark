@@ -6,7 +6,7 @@ Usage:
     python benchmark/run.py [--output results.json]
 
 Environment variables:
-    GITHUB_TOKEN        required — provided automatically in GitHub Actions
+    ANTHROPIC_API_KEY   required — add as a repository secret
     BENCHMARK_DOC_URL   override the annotated-MD source URL (optional)
 """
 
@@ -29,12 +29,12 @@ def main() -> None:
     parser.add_argument("--output", default="results.json", help="Output JSON path")
     args = parser.parse_args()
 
-    github_token = os.environ.get("GITHUB_TOKEN")
-    if not github_token:
-        sys.exit("Error: GITHUB_TOKEN environment variable is not set.")
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        sys.exit("Error: ANTHROPIC_API_KEY environment variable is not set.")
 
     md_url = os.environ.get("BENCHMARK_DOC_URL") or DOC_MD_URL
-    client = make_client(github_token)
+    client = make_client(api_key)
 
     print("=== Doc Format Benchmark ===")
     print(f"Answer model : {ANSWER_MODEL}")
