@@ -12,7 +12,7 @@ import tiktoken
 from openai import OpenAI
 
 GITHUB_MODELS_BASE_URL = "https://models.inference.ai.azure.com"
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
 
 _ENCODING = tiktoken.get_encoding("cl100k_base")
 
@@ -73,6 +73,7 @@ def answer_question(
     response = client.chat.completions.create(
         model=model,
         max_tokens=512,
+        temperature=0,
         messages=[
             {"role": "system", "content": _ANSWER_SYSTEM},
             {
@@ -100,6 +101,7 @@ def judge_answer(
     response = client.chat.completions.create(
         model=model,
         max_tokens=256,
+        temperature=0,
         messages=[
             {"role": "system", "content": _JUDGE_SYSTEM},
             {"role": "user", "content": prompt},
