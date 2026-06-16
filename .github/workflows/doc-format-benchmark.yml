@@ -1,0 +1,87 @@
+name: Doc Format Benchmark
+
+# Triggered manually. Compares token cost and eval accuracy across doc formats
+# using GitHub Models (Copilot) — no extra secrets required.
+#
+# Requires: Copilot access enabled for this repository's organization.
+
+on:
+  workflow_dispatch:
+    inputs:
+      doc_url:
+        description: "Override annotated-MD source URL (leave blank for default)"
+        required: false
+        default: ""
+
+jobs:
+  benchmark:
+    name: Run benchmark
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      models: read
+
+    steps:
+      # ------------------------------------------------------------------ #
+      # Setup                                                               #
+      # ------------------------------------------------------------------ #
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: benchmark/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r benchmark/requirements.txt
+
+      # ------------------------------------------------------------------ #
+      # Run                                                                 #
+      # ------------------------------------------------------------------ #
+      - name: Run benchmark
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BENCHMARK_DOC_URL: ${{ inputs.doc_url }}
+        run: python benchmark/run.py --output results.json
+
+      # ------------------------------------------------------------------ #
+      # Report                                                              #
+      # ------------------------------------------------------------------ #
+      - name: Generate issue body
+        run: python benchmark/report.py results.json > issue_body.md
+
+      - name: Ensure 'benchmark' label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create benchmark \
+            --color 0075ca \
+            --description "Automated benchmark results" \
+            --force
+
+      - name: Create GitHub issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="[Benchmark] doc-format · gpt-4o-mini · $(date -u +%Y-%m-%d)"
+          gh issue create \
+            --title "$TITLE" \
+            --body-file issue_body.md \
+            --label benchmark
+
+      # ------------------------------------------------------------------ #
+      # Artifacts                                                           #
+      # ------------------------------------------------------------------ #
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          path: |
+            results.json
+            issue_body.md
+          retention-days: 30
