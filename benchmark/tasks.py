@@ -67,14 +67,12 @@ TASKS = [
         "id": "applies_to",
         "category": "metadata",
         "question": (
-            "Which Elastic products and deployment types does this quickstart officially apply to?"
+            "Which Elastic products and deployment types is this quickstart compatible with?"
         ),
         "ground_truth": (
-            "Elastic Cloud Hosted, Elastic Cloud Serverless, "
-            "Elastic Distribution of OpenTelemetry Collector, Elastic Observability; "
-            "Serverless Observability projects (Generally available), "
-            "Elastic Stack (Generally available), "
-            "EDOT Collector (Generally available)"
+            "Elastic Cloud Hosted, Elastic Cloud Serverless, self-managed Elastic Stack, "
+            "Elastic Distribution of OpenTelemetry Collector (EDOT), "
+            "Elastic Observability, Kibana"
         ),
     },
     {
@@ -85,24 +83,22 @@ TASKS = [
             "Python metrics flowing into Kibana?"
         ),
         "ground_truth": (
-            "1. Create an Elastic API key and note the OTLP ingest endpoint; "
-            "2. Configure collector-config.yaml with OTLP receivers, batch processor, "
-            "and OTLPHTTP exporter pointing to your Elastic endpoint; "
-            "3. Run the EDOT Collector via Docker; "
-            "4. Run the Python app that emits OTLP metrics; "
-            "5. Verify metrics in Kibana under Infrastructure > Metrics Explorer"
+            "1. Create an Elastic API key; "
+            "2. Configure and run the EDOT Collector; "
+            "3. Run the Python app that emits OTLP metrics; "
+            "4. Verify metrics in Kibana Metrics Explorer"
         ),
     },
     {
         "id": "extend_options",
         "category": "comprehension",
-        "question": "What are all the ways to extend the basic metrics setup described in this doc?",
+        "question": "What are the ways mentioned to extend the basic metrics setup?",
         "ground_truth": (
-            "Add more receivers to collect additional metrics; "
-            "configure the Collector to send logs and traces alongside metrics; "
-            "use Metrics Explorer to create custom visualizations and dashboards; "
-            "set up alerts based on custom metrics; "
-            "aggregate and analyze metric trends over time"
+            "Add more receivers for additional metrics; "
+            "configure the Collector to send logs and traces; "
+            "create custom visualizations and dashboards; "
+            "set up alerts on custom metrics; "
+            "aggregate and analyze metric trends"
         ),
     },
     {

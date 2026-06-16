@@ -2,9 +2,9 @@
 Fetch and convert the benchmark document into four formats:
 
   annotated_md  — Elastic's rich source Markdown (frontmatter + custom directives)
-  doclang       — DocTags produced by Docling (loaded from committed fixture)
+  vanilla_md    — Standard Markdown: no frontmatter, no Elastic directives
   html          — Main-content HTML extracted from the live web page
-  plain_text    — Stripped text baseline (no markup at all)
+  doclang       — DocTags produced by Docling (loaded from committed fixture)
 
 The doclang fixture is generated once via benchmark/generate_fixture.py and
 committed to the repo so CI never needs Docling as a runtime dependency.
@@ -338,8 +338,14 @@ def convert_to_doclang(annotated_md: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def strip_to_plain_text(annotated_md: str) -> str:
-    """Strip all markup and directives to a plain-text baseline."""
+def strip_to_vanilla_md(annotated_md: str) -> str:
+    """
+    Remove frontmatter and Elastic-specific directives, keep standard Markdown.
+
+    This represents what the document would look like written in plain Markdown
+    without any proprietary tooling: headings, bold, code fences, and lists are
+    preserved; <stepper>/<step> are converted to ### Step N headings.
+    """
     lines = annotated_md.split("\n")
 
     # Remove frontmatter
@@ -353,22 +359,18 @@ def strip_to_plain_text(annotated_md: str) -> str:
 
     text = "\n".join(body_lines)
 
-    # Remove custom Elastic directives
-    text = re.sub(r"</?stepper>", "", text)
-    text = re.sub(r'<step\s+title="([^"]+)">', r"\1\n", text)
+    # Remove <stepper> wrapper tags
+    text = re.sub(r"</?stepper>\s*", "", text)
+
+    # Convert <step title="X"> to a numbered ### heading
+    _counter: list[int] = [0]
+
+    def _step_to_heading(m: re.Match) -> str:
+        _counter[0] += 1
+        return f"### Step {_counter[0]}: {m.group(1)}"
+
+    text = re.sub(r'<step\s+title="([^"]+)">', _step_to_heading, text)
     text = re.sub(r"</step>", "", text)
-
-    # Remove code fences (keep code content)
-    text = re.sub(r"```\w*\n?", "", text)
-
-    # Remove heading markers
-    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
-
-    # Remove inline formatting
-    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
-    text = re.sub(r"\*(.+?)\*", r"\1", text)
-    text = re.sub(r"`(.+?)`", r"\1", text)
-    text = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", text)
 
     # Collapse excess blank lines
     text = re.sub(r"\n{3,}", "\n\n", text)
@@ -409,12 +411,12 @@ def get_all_formats(
     print("  Loading doclang fixture (Docling DocTags)...", flush=True)
     doclang = load_doclang_fixture()
 
-    print("  Converting → plain_text...", flush=True)
-    plain_text = strip_to_plain_text(annotated_md)
+    print("  Converting → vanilla_md...", flush=True)
+    vanilla_md = strip_to_vanilla_md(annotated_md)
 
     return {
         "annotated_md": annotated_md,
-        "doclang": doclang,
+        "vanilla_md": vanilla_md,
         "html": html,
-        "plain_text": plain_text,
+        "doclang": doclang,
     }

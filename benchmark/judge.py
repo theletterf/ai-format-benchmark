@@ -1,8 +1,13 @@
 """
 LLM-based answering and judging via GitHub Models (OpenAI-compatible API).
 
-Token counting is done locally with tiktoken — no extra API call required.
-The GITHUB_TOKEN provided automatically in Actions is used as the bearer token.
+Answering model  : gpt-4o-mini   (small, fast; answers at default temperature
+                                   so each of the N_SAMPLES runs differs)
+Judging model    : gpt-4.5        (stronger; temperature=0 for determinism)
+Token counting   : tiktoken o200k_base — gpt-4o-mini's actual vocabulary
+
+Each task is sampled N_SAMPLES times; scores are averaged to a float,
+which reduces the effect of single-call judge noise.
 """
 
 import json
@@ -12,9 +17,14 @@ import tiktoken
 from openai import OpenAI
 
 GITHUB_MODELS_BASE_URL = "https://models.inference.ai.azure.com"
-DEFAULT_MODEL = "gpt-4o-mini"
 
-_ENCODING = tiktoken.get_encoding("cl100k_base")
+ANSWER_MODEL = "gpt-4o-mini"
+JUDGE_MODEL  = "gpt-4.5"          # user-specified; update if GitHub Models uses a different ID
+
+N_SAMPLES = 3                      # answer+judge calls per task per format
+
+# gpt-4o-mini uses the o200k_base vocabulary (not cl100k_base used by gpt-4)
+_ENCODING = tiktoken.get_encoding("o200k_base")
 
 _ANSWER_SYSTEM = (
     "You are a technical documentation assistant. "
@@ -52,7 +62,7 @@ def make_client(github_token: str) -> OpenAI:
 
 
 def count_doc_tokens(doc_content: str) -> int:
-    """Count input tokens for a document+question pair using tiktoken (local, free)."""
+    """Count input tokens using tiktoken (local, free, correct vocab for gpt-4o-mini)."""
     system_tokens = len(_ENCODING.encode(_ANSWER_SYSTEM))
     user_tokens = len(
         _ENCODING.encode(
@@ -65,15 +75,13 @@ def count_doc_tokens(doc_content: str) -> int:
 
 def answer_question(
     client: OpenAI,
-    model: str,
     doc_content: str,
     question: str,
 ) -> tuple[str, int]:
-    """Return (answer_text, completion_tokens)."""
+    """Return (answer_text, completion_tokens). Uses default temperature for genuine variation."""
     response = client.chat.completions.create(
-        model=model,
+        model=ANSWER_MODEL,
         max_tokens=512,
-        temperature=0,
         messages=[
             {"role": "system", "content": _ANSWER_SYSTEM},
             {
@@ -87,19 +95,18 @@ def answer_question(
 
 def judge_answer(
     client: OpenAI,
-    model: str,
     question: str,
     ground_truth: str,
     answer: str,
 ) -> dict:
-    """Return {"score": 0|1|2, "reasoning": str}."""
+    """Return {"score": 0|1|2, "reasoning": str}. temperature=0 for deterministic scoring."""
     prompt = _JUDGE_PROMPT.format(
         question=question,
         ground_truth=ground_truth,
         answer=answer,
     )
     response = client.chat.completions.create(
-        model=model,
+        model=JUDGE_MODEL,
         max_tokens=256,
         temperature=0,
         messages=[
@@ -119,24 +126,35 @@ def judge_answer(
 
 def evaluate_format(
     client: OpenAI,
-    model: str,
     format_name: str,
     doc_content: str,
     tasks: list[dict],
 ) -> dict:
-    """Run the full evaluation pipeline for one document format."""
+    """
+    Run the full evaluation pipeline for one document format.
+    Each task is answered and judged N_SAMPLES times; scores are averaged.
+    """
     print(f"    counting tokens (local)...", flush=True)
     token_count = count_doc_tokens(doc_content)
 
     task_results = []
     for task in tasks:
-        print(f"    [{task['id']}] answering...", flush=True)
-        answer, answer_tokens = answer_question(client, model, doc_content, task["question"])
+        samples = []
+        for s in range(1, N_SAMPLES + 1):
+            print(f"    [{task['id']}] sample {s}/{N_SAMPLES}...", flush=True)
+            answer, answer_tokens = answer_question(client, doc_content, task["question"])
+            judgment = judge_answer(client, task["question"], task["ground_truth"], answer)
+            samples.append(
+                {
+                    "answer": answer,
+                    "answer_tokens": answer_tokens,
+                    "score": judgment.get("score", 0),
+                    "reasoning": judgment.get("reasoning", ""),
+                }
+            )
 
-        print(f"    [{task['id']}] judging...", flush=True)
-        judgment = judge_answer(
-            client, model, task["question"], task["ground_truth"], answer
-        )
+        scores = [s["score"] for s in samples]
+        avg_score = round(sum(scores) / len(scores), 3)
 
         task_results.append(
             {
@@ -144,22 +162,23 @@ def evaluate_format(
                 "category": task["category"],
                 "question": task["question"],
                 "ground_truth": task["ground_truth"],
-                "answer": answer,
-                "answer_tokens": answer_tokens,
-                "score": judgment.get("score", 0),
+                "avg_score": avg_score,
                 "max_score": 2,
-                "reasoning": judgment.get("reasoning", ""),
+                "samples": samples,
             }
         )
 
-    total_score = sum(t["score"] for t in task_results)
+    total_score = round(sum(t["avg_score"] for t in task_results), 2)
     max_total = sum(t["max_score"] for t in task_results)
-    total_answer_tokens = sum(t["answer_tokens"] for t in task_results)
+    total_answer_tokens = sum(
+        s["answer_tokens"] for t in task_results for s in t["samples"]
+    )
 
     return {
         "format": format_name,
         "token_count": token_count,
         "total_answer_tokens": total_answer_tokens,
+        "n_samples": N_SAMPLES,
         "tasks": task_results,
         "total_score": total_score,
         "max_total_score": max_total,

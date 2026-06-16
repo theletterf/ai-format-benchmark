@@ -19,8 +19,8 @@ from datetime import datetime, timezone
 # Make benchmark package importable when run directly
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from benchmark.formats import DOC_MD_URL, DOC_HTML_URL, get_all_formats
-from benchmark.judge import DEFAULT_MODEL, make_client, evaluate_format
+from benchmark.formats import DOC_HTML_URL, DOC_MD_URL, get_all_formats
+from benchmark.judge import ANSWER_MODEL, JUDGE_MODEL, N_SAMPLES, evaluate_format, make_client
 from benchmark.tasks import TASKS
 
 
@@ -34,14 +34,14 @@ def main() -> None:
         sys.exit("Error: GITHUB_TOKEN environment variable is not set.")
 
     md_url = os.environ.get("BENCHMARK_DOC_URL") or DOC_MD_URL
-
     client = make_client(github_token)
-    model = DEFAULT_MODEL
 
-    print(f"=== Doc Format Benchmark ===")
-    print(f"Model  : {model} (GitHub Models)")
-    print(f"Tasks  : {len(TASKS)}")
-    print(f"Doc URL: {md_url}")
+    print("=== Doc Format Benchmark ===")
+    print(f"Answer model : {ANSWER_MODEL}")
+    print(f"Judge model  : {JUDGE_MODEL}")
+    print(f"Samples/task : {N_SAMPLES}")
+    print(f"Tasks        : {len(TASKS)}")
+    print(f"Doc URL      : {md_url}")
     print()
 
     # ------------------------------------------------------------------ #
@@ -49,7 +49,6 @@ def main() -> None:
     # ------------------------------------------------------------------ #
     print("Fetching document formats...")
     formats_content = get_all_formats(md_url=md_url, html_url=DOC_HTML_URL)
-
     for name, content in formats_content.items():
         print(f"  {name:<14} {len(content):>7,} chars")
     print()
@@ -60,7 +59,7 @@ def main() -> None:
     results_by_format: dict = {}
     for fmt_name, doc_content in formats_content.items():
         print(f"Evaluating: {fmt_name}")
-        result = evaluate_format(client, model, fmt_name, doc_content, TASKS)
+        result = evaluate_format(client, fmt_name, doc_content, TASKS)
         results_by_format[fmt_name] = result
         print(
             f"  → {result['total_score']}/{result['max_total_score']} "
@@ -75,7 +74,9 @@ def main() -> None:
     run_id = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     output = {
         "run_id": run_id,
-        "model": model,
+        "answer_model": ANSWER_MODEL,
+        "judge_model": JUDGE_MODEL,
+        "n_samples": N_SAMPLES,
         "doc_url": md_url,
         "formats": results_by_format,
     }
@@ -85,12 +86,11 @@ def main() -> None:
 
     print(f"Results saved → {args.output}")
     print()
-
-    print(f"{'Format':<16} {'Score':>7}  {'Accuracy':>9}  {'Tokens':>8}")
-    print("-" * 50)
+    print(f"{'Format':<16} {'Score':>8}  {'Accuracy':>9}  {'Tokens':>8}")
+    print("-" * 52)
     for fn, fd in sorted(results_by_format.items(), key=lambda kv: -kv[1]["accuracy"]):
         print(
-            f"  {fn:<14} {fd['total_score']:>3}/{fd['max_total_score']:<3}  "
+            f"  {fn:<14} {fd['total_score']:>5.1f}/{fd['max_total_score']:<3}  "
             f"{fd['accuracy']:>8.0%}  {fd['token_count']:>8,}"
         )
 
