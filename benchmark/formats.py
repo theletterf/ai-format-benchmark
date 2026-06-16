@@ -110,7 +110,9 @@ def fetch_annotated_md(url: str = DOC_MD_URL) -> str:
 
 
 def fetch_html(url: str = DOC_HTML_URL) -> str:
-    resp = requests.get(url, headers=_HEADERS, timeout=30)
+    # Explicit Accept: text/html — the site does content negotiation and returns
+    # Markdown for text/plain or text/markdown requests.
+    resp = requests.get(url, headers={**_HEADERS, "Accept": "text/html"}, timeout=30)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "lxml")
 
