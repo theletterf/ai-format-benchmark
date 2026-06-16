@@ -153,27 +153,35 @@ def generate_report(results: dict) -> str:
             lines.append(f"| `{tid}` | {cat} | {' | '.join(cells)} |")
         lines.append("")
 
-        # Per-sample reasoning (collapsible)
-        lines += [
-            "### Judge Reasoning",
-            "",
-            "<details>",
-            "<summary>Expand per-format, per-task, per-sample reasoning</summary>",
-            "",
-        ]
-        for fn, fd in formats.items():
-            lines.append(f"#### `{fn}`")
-            lines.append("")
-            for t in fd["tasks"]:
-                lines.append(f"##### `{t['id']}` — avg {t['avg_score']:.2f}/2")
+        # Per-sample reasoning (collapsible, capped to stay within GitHub's 65k body limit)
+        REASONING_DOCS = 1  # only include reasoning for first doc to keep body small
+        doc_index = list(results["documents"].keys()).index(doc_id)
+        if doc_index < REASONING_DOCS:
+            lines += [
+                "### Judge Reasoning",
+                "",
+                "<details>",
+                "<summary>Expand per-format, per-task, per-sample reasoning</summary>",
+                "",
+            ]
+            for fn, fd in formats.items():
+                lines.append(f"#### `{fn}`")
                 lines.append("")
-                lines.append("| Sample | Score | Reasoning |")
-                lines.append("|-------:|------:|-----------|")
-                for i, s in enumerate(t.get("samples", []), 1):
-                    reasoning = s["reasoning"].replace("|", "\\|")
-                    lines.append(f"| {i} | {_score_icon(s['score'])} {s['score']}/2 | {reasoning} |")
-                lines.append("")
-        lines += ["</details>", ""]
+                for t in fd["tasks"]:
+                    lines.append(f"##### `{t['id']}` — avg {t['avg_score']:.2f}/2")
+                    lines.append("")
+                    lines.append("| Sample | Score | Reasoning |")
+                    lines.append("|-------:|------:|-----------|")
+                    for i, s in enumerate(t.get("samples", []), 1):
+                        reasoning = s["reasoning"].replace("|", "\\|")
+                        lines.append(f"| {i} | {_score_icon(s['score'])} {s['score']}/2 | {reasoning} |")
+                    lines.append("")
+            lines += ["</details>", ""]
+        else:
+            lines += [
+                "> Full judge reasoning available in the `results.json` workflow artifact.",
+                "",
+            ]
 
     lines += [
         "---",
