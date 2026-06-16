@@ -19,7 +19,7 @@ from openai import OpenAI
 GITHUB_MODELS_BASE_URL = "https://models.inference.ai.azure.com"
 
 ANSWER_MODEL = "gpt-4o-mini"
-JUDGE_MODEL  = "gpt-4.5"          # user-specified; update if GitHub Models uses a different ID
+JUDGE_MODEL  = "gpt-4o"            # strongest model available on GitHub Models
 
 N_SAMPLES = 3                      # answer+judge calls per task per format
 

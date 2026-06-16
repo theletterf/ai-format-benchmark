@@ -67,7 +67,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TITLE="[Benchmark] doc-format · gpt-4o-mini → gpt-4.5 judge · $(date -u +%Y-%m-%d)"
+          TITLE="[Benchmark] doc-format · gpt-4o-mini → gpt-4o judge · $(date -u +%Y-%m-%d)"
           gh issue create \
             --title "$TITLE" \
             --body-file issue_body.md \
