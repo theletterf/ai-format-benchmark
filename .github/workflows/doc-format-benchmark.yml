@@ -7,11 +7,6 @@ name: Doc Format Benchmark
 
 on:
   workflow_dispatch:
-    inputs:
-      doc_url:
-        description: "Override annotated-MD source URL (leave blank for default)"
-        required: false
-        default: ""
 
 jobs:
   benchmark:
@@ -44,7 +39,6 @@ jobs:
       - name: Run benchmark
         env:
           LITELLM_API_KEY: ${{ secrets.LITELLM_API_KEY }}
-          BENCHMARK_DOC_URL: ${{ inputs.doc_url }}
         run: python benchmark/run.py --output results.json
 
       # ------------------------------------------------------------------ #
@@ -66,7 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TITLE="[Benchmark] doc-format · haiku-4-5 → sonnet-4-6 judge · $(date -u +%Y-%m-%d)"
+          TITLE="[Benchmark] doc-format · sonnet-4-6 · 3 docs · $(date -u +%Y-%m-%d)"
           gh issue create \
             --title "$TITLE" \
             --body-file issue_body.md \

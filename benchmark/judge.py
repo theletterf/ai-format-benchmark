@@ -1,8 +1,8 @@
 """
 LLM-based answering and judging via LiteLLM (OpenAI-compatible proxy).
 
-Answering model  : claude-haiku-4-5-20251001  (fast, cheap; default temperature)
-Judging model    : claude-sonnet-4-6           (stronger; temperature=0)
+Answering model  : claude-sonnet-4-6  (default temperature for sample variation)
+Judging model    : claude-sonnet-4-6  (same model; temperature=0 for determinism)
 Token counting   : usage.prompt_tokens from API response — model-native, exact
 
 Each task is sampled N_SAMPLES times; scores are averaged to a float.
@@ -15,7 +15,7 @@ from openai import OpenAI
 
 LITELLM_BASE_URL = "https://elastic.litellm-prod.ai/"
 
-ANSWER_MODEL = "llm-gateway/claude-haiku-4-5"
+ANSWER_MODEL = "llm-gateway/claude-sonnet-4-6"
 JUDGE_MODEL  = "llm-gateway/claude-sonnet-4-6"
 
 N_SAMPLES = 3

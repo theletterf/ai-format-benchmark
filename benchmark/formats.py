@@ -383,40 +383,54 @@ def strip_to_vanilla_md(annotated_md: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def load_doclang_fixture() -> str:
-    """Load the committed Docling DocTags fixture."""
-    if not os.path.exists(DOCLANG_FIXTURE):
-        raise FileNotFoundError(
-            f"DocTags fixture not found at {DOCLANG_FIXTURE}. "
-            "Run: python benchmark/generate_fixture.py"
-        )
-    with open(DOCLANG_FIXTURE, encoding="utf-8") as fh:
+def load_doclang_fixture(doc_id: str) -> Optional[str]:
+    """Load the committed Docling DocTags fixture for a document. Returns None if missing."""
+    path = os.path.join(FIXTURE_DIR, f"{doc_id}.doctags")
+    if not os.path.exists(path):
+        print(f"  WARNING: doclang fixture missing for '{doc_id}' ({path}). Skipping.", flush=True)
+        return None
+    with open(path, encoding="utf-8") as fh:
         return fh.read()
 
+
+def get_formats_for_doc(doc: dict) -> dict[str, str]:
+    """
+    Return benchmark formats for a document config dict.
+    doclang is loaded from the committed fixture (skipped if not present).
+    """
+    md_url = doc["md_url"]
+    html_url = doc["html_url"]
+    doc_id = doc["id"]
+
+    print(f"  Fetching annotated_md...", flush=True)
+    annotated_md = fetch_annotated_md(md_url)
+
+    print(f"  Fetching html...", flush=True)
+    html = fetch_html(html_url)
+
+    print(f"  Loading doclang fixture...", flush=True)
+    doclang = load_doclang_fixture(doc_id)
+
+    print(f"  Converting → vanilla_md...", flush=True)
+    vanilla_md = strip_to_vanilla_md(annotated_md)
+
+    formats = {
+        "annotated_md": annotated_md,
+        "vanilla_md": vanilla_md,
+        "html": html,
+    }
+    if doclang is not None:
+        formats["doclang"] = doclang
+    return formats
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible alias (kept for local testing / generate_fixture.py)
+# ---------------------------------------------------------------------------
 
 def get_all_formats(
     md_url: str = DOC_MD_URL,
     html_url: str = DOC_HTML_URL,
 ) -> dict[str, str]:
-    """
-    Return all four benchmark formats keyed by format name.
-    doclang is loaded from the committed fixture; everything else is fetched live.
-    """
-    print("  Fetching annotated_md...", flush=True)
-    annotated_md = fetch_annotated_md(md_url)
-
-    print("  Fetching html...", flush=True)
-    html = fetch_html(html_url)
-
-    print("  Loading doclang fixture (Docling DocTags)...", flush=True)
-    doclang = load_doclang_fixture()
-
-    print("  Converting → vanilla_md...", flush=True)
-    vanilla_md = strip_to_vanilla_md(annotated_md)
-
-    return {
-        "annotated_md": annotated_md,
-        "vanilla_md": vanilla_md,
-        "html": html,
-        "doclang": doclang,
-    }
+    doc = {"id": "doc", "md_url": md_url, "html_url": html_url}
+    return get_formats_for_doc(doc)

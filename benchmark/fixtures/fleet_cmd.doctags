@@ -1,0 +1,1455 @@
+<doctag><ordered_list><list_item><inline><text>Elastic Docs</text>
+<text>/</text>
+</inline></list_item>
+<list_item><inline><text>Reference</text>
+<text>/</text>
+</inline></list_item>
+<list_item><inline><text>Ingestion tools</text>
+<text>/</text>
+</inline></list_item>
+<list_item>Fleet and Elastic Agent</list_item>
+</ordered_list>
+<checkbox_unselected></checkbox_unselected>
+<title>Elastic Agent command reference</title>
+<inline><text>Elastic Agent provides commands for running Elastic Agent, managing Fleet Server, and doing common tasks. The commands listed here apply to both</text>
+<text>Fleet-managed</text>
+<text>and</text>
+<text>standalone</text>
+<text>Elastic Agent.</text>
+</inline>
+<text>Restrictions</text>
+<text>Note the following restrictions for running Elastic Agent commands:</text>
+<unordered_list><list_item><inline><text>You might need to log in as a root user (or Administrator on Windows) to run the commands described here. After the Elastic Agent service is installed and running, make sure you run these commands without prepending them with</text>
+<code><_unknown_>./</code>
+<text>to avoid invoking the wrong binary.</text>
+</inline></list_item>
+<list_item>Running Elastic Agent commands using the Windows PowerShell ISE is not supported.</list_item>
+</unordered_list>
+<text>Command options for Fleet Server</text>
+<inline><text>Because self-managed Fleet Server is not supported on Elastic Cloud Serverless, the</text>
+<code><_unknown_>elastic-agent enroll</code>
+<text>and</text>
+<code><_unknown_>elastic-agent install</code>
+<text>options that configure Fleet Server are not available on Serverless.</text>
+</inline>
+<unordered_list><list_item>diagnostics</list_item>
+<list_item>enroll</list_item>
+<list_item>help</list_item>
+<list_item>inspect</list_item>
+<list_item>install</list_item>
+<list_item>otel</list_item>
+<list_item>privileged</list_item>
+<list_item>restart</list_item>
+<list_item>run</list_item>
+<list_item>status</list_item>
+<list_item>uninstall</list_item>
+<list_item>upgrade</list_item>
+<list_item>logs</list_item>
+<list_item>unprivileged</list_item>
+<list_item>version</list_item>
+<list_item>windows</list_item>
+</unordered_list>
+<section_header_level_1>elastic-agent diagnostics</section_header_level_1>
+<text>Gather diagnostics information from the Elastic Agent and component/unit itâs running. This command produces an archive that contains:</text>
+<unordered_list><list_item>version.txt - version information</list_item>
+<list_item>agent-info.yaml - contains the agent local metadata that is also sent to Fleet</list_item>
+<list_item>pre-config.yaml - pre-configuration before variable substitution - this is the elastic-agent.yaml from disk or from Fleet</list_item>
+<list_item><inline><text>otel.yaml - the OpenTelemetry collector configuration file used with the</text>
+<code><_unknown_>otel</code>
+<text>sub-command</text>
+</inline></list_item>
+<list_item>otel-merged.yaml - the final configuration file provided to the OpenTelemetry collector, including any internally generated collector components</list_item>
+<list_item>variables.yaml - current variable contexts from providers</list_item>
+<list_item>environment.yaml - current environment variables visible to the Elastic Agent process</list_item>
+<list_item>computed-config.yaml - configuration after variable substitution</list_item>
+<list_item>components-expected.yaml - expected computed components model from the computed-config.yaml</list_item>
+<list_item>components-actual.yaml - actual running components model as reported by the runtime manager</list_item>
+<list_item>state.yaml - current state information of all running components</list_item>
+<list_item><inline><text>*.pprof.gz files from the running</text>
+<code><_unknown_>elastic-agent</code>
+<text>process for analysis with</text>
+<code><_unknown_>go tool pprof</code>
+<text>:</text>
+</inline></list_item>
+<list_item><unordered_list><list_item>goroutine.pprof.gz - goroutine dump</list_item>
+<list_item>heap.pprof.gz - memory allocation of live objects</list_item>
+<list_item>allocs.pprof.gz - sampling past memory allocations</list_item>
+<list_item>threadcreate.pprof.gz - traces led to creation of new OS threads</list_item>
+<list_item>block.pprof.gz - stack traces that led to blocking on synchronization primitives</list_item>
+<list_item>mutex.pprof.gz - stack traces of holders of contended mutexes</list_item>
+</unordered_list></list_item>
+<list_item>components/ directory - diagnostic information from each running component process:</list_item>
+<list_item><unordered_list><list_item>Typically one directory per input-output pair representing a supervised process containing:</list_item>
+<list_item><unordered_list><list_item><inline><text>*.pprof.gz - profiles for analysis with</text>
+<code><_unknown_>go tool pprof</code>
+<text>; refer to the previous descriptions</text>
+</inline></list_item>
+<list_item>*_metrics.json - metrics snapshots captured from running Beat processes</list_item>
+</unordered_list></list_item>
+</unordered_list></list_item>
+<list_item>edot/ directory - the output of Elastic's collector diagnostics extension:</list_item>
+<list_item><unordered_list><list_item>otel-merged-actual.yaml - the current configuration of the running collector, which should match the otel-merged.yaml file described previously</list_item>
+<list_item><inline><text>*.profile.gz - profiles for analysis with</text>
+<code><_unknown_>go tool pprof</code>
+<text>; refer to the previous descriptions</text>
+</inline></list_item>
+</unordered_list></list_item>
+</unordered_list>
+<inline><text>Note that</text>
+<text>credentials may not be redacted</text>
+<text>in the archive; they may appear in plain text in the configuration or policy files inside the archive.</text>
+</inline>
+<text>This command is intended for debugging purposes only. The output format and structure of the archive may change between releases.</text>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent diagnostics [--file <string>]
+                          [--cpu-profile]
+                          [--exclude-events]
+                          [--help]
+                          [global-flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--file</code>
+</inline>
+<inline><text>Specifies the output archive name. Defaults to</text>
+<code><_unknown_>elastic-agent-diagnostics-<timestamp>.zip</code>
+<text>, where the timestamp is the current time in UTC.</text>
+</inline>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>diagnostics</code>
+<text>command.</text>
+</inline>
+<inline><code><_unknown_>--cpu-profile</code>
+</inline>
+<inline><text>Additionally runs a 30-second CPU profile on each running component. This will generate an additional</text>
+<code><_unknown_>cpu.pprof</code>
+<text>file for each component.</text>
+</inline>
+<inline><code><_unknown_>--p</code>
+</inline>
+<inline><text>Alias for</text>
+<code><_unknown_>--cpu-profile</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--exclude-events</code>
+</inline>
+<text>Exclude the events log files from the diagnostics archive.</text>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Example</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent diagnostics</code>
+</inline>
+<section_header_level_1>elastic-agent enroll</section_header_level_1>
+<text>Enroll the Elastic Agent in Fleet.</text>
+<text>Use this command to enroll the Elastic Agent in Fleet without installing the agent as a service. You will need to do this if you installed the Elastic Agent from a DEB or RPM package and plan to use systemd commands to start and manage the service. This command is also useful for testing Elastic Agent prior to installing it.</text>
+<text>If youâve already installed Elastic Agent, use this command to modify the settings that Elastic Agent runs with.</text>
+<text>Tip</text>
+<inline><text>To enroll an Elastic Agent</text>
+<text>and</text>
+<text>install it as a service, use the</text>
+<code><_unknown_>install</code>
+<text>command</text>
+<text>instead. Installing as a service is the most common scenario.</text>
+</inline>
+<inline><text>We recommend that you run the</text>
+<code><_unknown_>enroll</code>
+<text>(or</text>
+<code><_unknown_>install</code>
+<text>) command as the root user because some integrations require root privileges to collect sensitive data. This command overwrites the</text>
+<code><_unknown_>elastic-agent.yml</code>
+<text>file in the agent directory.</text>
+</inline>
+<inline><text>This command includes optional flags to set up</text>
+<text>Fleet Server</text>
+<text>.</text>
+</inline>
+<text>Important</text>
+<inline><text>This command enrolls the Elastic Agent in Fleet; it does not start the agent. To start the agent, either</text>
+<text>start the service</text>
+<text>, if one exists, or use the</text>
+<code><_unknown_>run</code>
+<text>command</text>
+<text>to start the agent from a terminal.</text>
+</inline>
+<section_header_level_2>Synopsis</section_header_level_2>
+<text>To enroll the Elastic Agent in Fleet:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent enroll --url <string>
+                     --enrollment-token <string>
+                     [--ca-sha256 <string>]
+                     [--certificate-authorities <string>]
+                     [--daemon-timeout <duration>]
+                     [--delay-enroll]
+                     [--elastic-agent-cert <string>]
+                     [--elastic-agent-cert-key <string>]
+                     [--elastic-agent-cert-key-passphrase <string>]
+                     [--force]
+                     [--header <strings>]
+                     [--help]
+                     [--id <string>]
+                     [--insecure ]
+                     [--proxy-disabled]
+                     [--proxy-header <strings>]
+                     [--proxy-url <string>]
+                     [--replace-token <string>]
+                     [--staging <string>]
+                     [--tag <string>]
+                     [global-flags]</code>
+</inline>
+<text>To enroll the Elastic Agent in Fleet and set up Fleet Server:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent enroll --fleet-server-es <string>
+                     --fleet-server-service-token <string>
+                     [--fleet-server-service-token-path <string>]
+                     [--ca-sha256 <string>]
+                     [--certificate-authorities <string>]
+                     [--daemon-timeout <duration>]
+                     [--delay-enroll]
+                     [--elastic-agent-cert <string>]
+                     [--elastic-agent-cert-key <string>]
+                     [--elastic-agent-cert-key-passphrase <string>]
+                     [--fleet-server-cert <string>] [--fleet-server-cert-key <string>]
+                     [--fleet-server-cert-key-passphrase <string>]
+                     [--fleet-server-client-auth <string>]
+                     [--fleet-server-es-ca <string>]
+                     [--fleet-server-es-ca-trusted-fingerprint <string>] [--fleet-server-es-cert <string>]
+                     [--fleet-server-es-cert-key <string>]
+                     [--fleet-server-es-insecure]
+                     [--fleet-server-host <string>]
+                     [--fleet-server-policy <string>]
+                     [--fleet-server-port <uint16>]
+                     [--fleet-server-timeout <duration>]
+                     [--force]
+                     [--header <strings>]
+                     [--help]
+                     [--proxy-disabled]
+                     [--proxy-header <strings>]
+                     [--proxy-url <string>]
+                     [--staging <string>]
+                     [--tag <string>]
+                     [--url <string>] [global-flags]</code>
+</inline>
+<ordered_list><list_item><inline><text>If no</text>
+<code><_unknown_>fleet-server-cert*</code>
+<text>flags are specified, Elastic Agent auto-generates a self-signed certificate with the hostname of the machine. Remote Elastic Agents enrolling into a Fleet Server with self-signed certificates must specify the</text>
+<code><_unknown_>--insecure</code>
+<text>flag.</text>
+</inline></list_item>
+<list_item>Required when using self-signed certificates with Elasticsearch.</list_item>
+<list_item><inline><text>Required when enrolling in a Fleet Server with custom certificates. The URL must match the DNS name used to generate the certificate specified by</text>
+<code><_unknown_>--fleet-server-cert</code>
+<text>.</text>
+</inline></list_item>
+</ordered_list>
+<inline><text>For more information about custom certificates, refer to</text>
+<text>Configure SSL/TLS for self-managed Fleet Servers</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--ca-sha256 <string></code>
+</inline>
+<text>Comma-separated list of certificate authority hash pins used for certificate verification.</text>
+<inline><code><_unknown_>--certificate-authorities <string></code>
+</inline>
+<text>Comma-separated list of root certificates used for server verification.</text>
+<inline><code><_unknown_>--daemon-timeout <duration></code>
+</inline>
+<text>Timeout waiting for Elastic Agent daemon.</text>
+<inline><code><_unknown_>--delay-enroll</code>
+</inline>
+<text>Delays enrollment to occur on first start of the Elastic Agent service. This setting is useful when you don't want the Elastic Agent to enroll until the next reboot or manual start of the service, for example, when you're preparing an image that includes Elastic Agent or deploying to environments where network access may not be immediately available. If Fleet Server is unreachable when the service starts, Elastic Agent will retry enrollment indefinitely until it succeeds.</text>
+<inline><code><_unknown_>--elastic-agent-cert</code>
+</inline>
+<text>Certificate to use as the client certificate for the Elastic Agent's connections to Fleet Server.</text>
+<inline><code><_unknown_>--elastic-agent-cert-key</code>
+</inline>
+<text>Private key to use as for the Elastic Agent's connections to Fleet Server.</text>
+<inline><code><_unknown_>--elastic-agent-cert-key-passphrase</code>
+</inline>
+<text>The path to the file that contains the passphrase for the mutual TLS private key that Elastic Agent will use to connect to Fleet Server. The file must only contain the characters of the passphrase, no newline or extra non-printing characters.</text>
+<inline><text>This option is only used if the</text>
+<code><_unknown_>--elastic-agent-cert-key</code>
+<text>is encrypted and requires a passphrase to use.</text>
+</inline>
+<inline><code><_unknown_>--enrollment-token <string></code>
+</inline>
+<text>Enrollment token to use to enroll Elastic Agent into Fleet. You can use the same enrollment token for multiple agents.</text>
+<inline><code><_unknown_>--fleet-server-cert <string></code>
+</inline>
+<text>Certificate to use for exposed Fleet Server HTTPS endpoint.</text>
+<inline><code><_unknown_>--fleet-server-cert-key <string></code>
+</inline>
+<text>Private key to use for exposed Fleet Server HTTPS endpoint.</text>
+<inline><code><_unknown_>--fleet-server-cert-key-passphrase <string></code>
+</inline>
+<text>Path to passphrase file for decrypting Fleet Server's private key if an encrypted private key is used.</text>
+<inline><code><_unknown_>--fleet-server-client-auth <string></code>
+</inline>
+<inline><text>One of</text>
+<code><_unknown_>none</code>
+<text>,</text>
+<code><_unknown_>optional</code>
+<text>, or</text>
+<code><_unknown_>required</code>
+<text>. Defaults to</text>
+<code><_unknown_>none</code>
+<text>. Fleet Server's</text>
+<code><_unknown_>client_authentication</code>
+<text>option for client mTLS connections. If</text>
+<code><_unknown_>optional</code>
+<text>, or</text>
+<code><_unknown_>required</code>
+<text>is specified, client certificates are verified using CAs specified in the</text>
+<code><_unknown_>--certificate-authorities</code>
+<text>flag.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-es <string></code>
+</inline>
+<text>Start a Fleet Server process when Elastic Agent is started, and connect to the specified Elasticsearch URL.</text>
+<inline><code><_unknown_>--fleet-server-es-ca <string></code>
+</inline>
+<inline><text>Path to certificate authority file to use to communicate with Elasticsearch. This is an alternative to using</text>
+<code><_unknown_>--fleet-server-es-ca-trusted-fingerprint</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-es-ca-trusted-fingerprint <string></code>
+</inline>
+<inline><text>The SHA-256 fingerprint (hash) of a certificate authority that is present in the certificate chain sent by Elasticsearch during the TLS handshake. If this certificate is found in the chain, it will be added to the trusted CAs. This is an alternative to using</text>
+<code><_unknown_>--fleet-server-es-ca</code>
+<text>to provide a CA certificate file. For more information, refer to</text>
+<text>Using certificate fingerprints</text>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-es-cert</code>
+</inline>
+<text>The path to the client certificate that Fleet Server will use when connecting to Elasticsearch.</text>
+<inline><code><_unknown_>--fleet-server-es-cert-key</code>
+</inline>
+<text>The path to the private key that Fleet Server will use when connecting to Elasticsearch.</text>
+<inline><code><_unknown_>--fleet-server-es-insecure</code>
+</inline>
+<text>Allows fleet server to connect to Elasticsearch in the following situations:</text>
+<unordered_list><list_item>When connecting to an HTTP server.</list_item>
+<list_item>When connecting to an HTTPs server and the certificate chain cannot be verified. The content is encrypted, but the certificate is not verified.</list_item>
+</unordered_list>
+<text>When this flag is used the certificate verification is disabled.</text>
+<inline><code><_unknown_>--fleet-server-host <string></code>
+</inline>
+<text>Fleet Server HTTP binding host (overrides the policy).</text>
+<inline><code><_unknown_>--fleet-server-policy <string></code>
+</inline>
+<text>Used when starting a self-managed Fleet Server to allow a specific policy to be used.</text>
+<inline><code><_unknown_>--fleet-server-port <uint16></code>
+</inline>
+<text>Fleet Server HTTP binding port (overrides the policy).</text>
+<inline><code><_unknown_>--fleet-server-service-token <string></code>
+</inline>
+<inline><text>Service token to use for communication with Elasticsearch. Mutually exclusive with</text>
+<code><_unknown_>--fleet-server-service-token-path</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-service-token-path <string></code>
+</inline>
+<inline><text>Service token file to use for communication with Elasticsearch. Mutually exclusive with</text>
+<code><_unknown_>--fleet-server-service-token</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-timeout <duration></code>
+</inline>
+<text>Timeout waiting for Fleet Server to be ready to start enrollment.</text>
+<inline><code><_unknown_>--force</code>
+</inline>
+<text>Force overwrite of current configuration without prompting for confirmation. This flag is helpful when using automation software or scripted deployments.</text>
+<text>Note</text>
+<inline><text>If the Elastic Agent is already installed on the host, using</text>
+<code><_unknown_>--force</code>
+<text>may result in unpredictable behavior with duplicate Elastic Agents appearing in Fleet.</text>
+</inline>
+<inline><code><_unknown_>--header <strings></code>
+</inline>
+<text>Headers used in communication with elasticsearch.</text>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>enroll</code>
+<text>command.</text>
+</inline>
+<inline><code><_unknown_>--id <string></code>
+</inline>
+<text>Specifies the unique identifier (agent ID) to use when enrolling the Elastic Agent with Fleet Server. This setting is useful when restoring a previously enrolled agent or in stateless environments where the agent cannot persist enrollment data between redeployments.</text>
+<text>Note</text>
+<inline><text>If an agent with the same ID is already enrolled in Fleet, enrollment will fail unless a valid replacement token is provided using the</text>
+<code><_unknown_>--replace-token</code>
+<text>flag.</text>
+</inline>
+<inline><code><_unknown_>--insecure</code>
+</inline>
+<text>Allow the Elastic Agent to connect to Fleet Server over insecure connections. This setting is required in the following situations:</text>
+<unordered_list><list_item>When connecting to an HTTP server. The API keys are sent in clear text.</list_item>
+<list_item>When connecting to an HTTPs server and the certificate chain cannot be verified. The content is encrypted, but the certificate is not verified.</list_item>
+<list_item>When using self-signed certificates generated by Elastic Agent.</list_item>
+</unordered_list>
+<text>We strongly recommend that you use a secure connection.</text>
+<inline><code><_unknown_>--proxy-disabled</code>
+</inline>
+<text>Disable proxy support including environment variables.</text>
+<inline><code><_unknown_>--proxy-header <strings></code>
+</inline>
+<text>Proxy headers used with CONNECT request.</text>
+<inline><code><_unknown_>--proxy-url <string></code>
+</inline>
+<text>Configures the proxy URL.</text>
+<inline><code><_unknown_>--replace-token <string></code>
+</inline>
+<text>Specifies a token that can be used to replace the Elastic Agent after its enrollment in Fleet Server. The token must be provided when enrolling an agent with a specific agent ID for the first time. Subsequently, the agent can be replaced by enrolling another agent using the same agent ID and replacement token. Once replaced, the original agent can no longer communicate with Fleet.</text>
+<text>Note</text>
+<text>If an Elastic Agent is enrolled without a replacement token, it cannot be replaced by another agent with the same ID. This mechanism prevents accidental or malicious takeovers by requiring the replacement token to match the hashed token stored in Fleet.</text>
+<inline><code><_unknown_>--staging <string></code>
+</inline>
+<text>Configures agent to download artifacts from a staging build.</text>
+<inline><code><_unknown_>--tag <string></code>
+</inline>
+<text>A comma-separated list of tags to apply to Fleet-managed Elastic Agents. You can use these tags to filter the list of agents in Fleet.</text>
+<text>Note</text>
+<text>Currently, there is no way to remove or edit existing tags. To change the tags, you must unenroll the Elastic Agent, then re-enroll it using new tags.</text>
+<inline><code><_unknown_>--url <string></code>
+</inline>
+<text>Fleet Server URL to use to enroll the Elastic Agent into Fleet.</text>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<text>Enroll the Elastic Agent in Fleet:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent enroll \
+  --url=https://cedd4e0e21e240b4s2bbbebdf1d6d52f.fleet.eu-west-1.aws.cld.elstc.co:443 \
+  --enrollment-token=NEFmVllaa0JLRXhKebVKVTR5TTI6N2JaVlJpSGpScmV0ZUVnZVlRUExFQQ==</code>
+</inline>
+<text>Enroll the Elastic Agent in Fleet and set up Fleet Server:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent enroll --fleet-server-es=http://elasticsearch:9200 \
+  --fleet-server-service-token=AbEAAdesYXN1abMvZmxlZXQtc2VldmVyL3Rva2VuLTE2MTkxMzg3MzIzMTg7dzEta0JDTmZUcGlDTjlwRmNVTjNVQQ \
+  --fleet-server-policy=a35fd520-26f5-11ec-8bd9-3374690g57b6</code>
+</inline>
+<text>Start Elastic Agent with Fleet Server (running on a custom CA). This example assumes youâve generated the certificates with the following names:</text>
+<unordered_list><list_item><inline><code><_unknown_>ca.crt</code>
+<text>: Root CA certificate</text>
+</inline></list_item>
+<list_item><inline><code><_unknown_>fleet-server.crt</code>
+<text>: Fleet Server certificate</text>
+</inline></list_item>
+<list_item><inline><code><_unknown_>fleet-server.key</code>
+<text>: Fleet Server private key</text>
+</inline></list_item>
+<list_item><inline><code><_unknown_>elasticsearch-ca.crt</code>
+<text>: CA certificate to use to connect to Elasticsearch</text>
+</inline></list_item>
+</unordered_list>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent enroll \
+  --url=https://fleet-server:8220 \
+  --fleet-server-es=https://elasticsearch:9200 \
+  --fleet-server-service-token=AAEBAWVsYXm0aWMvZmxlZXQtc2XydmVyL3Rva2VuLTE2MjM4OTAztDU1OTQ6dllfVW1mYnFTVjJwTC2ZQ0EtVnVZQQ \
+  --fleet-server-policy=a35fd520-26f5-11ec-8bd9-3374690g57b6 \
+  --certificate-authorities=/path/to/ca.crt \
+  --fleet-server-es-ca=/path/to/elasticsearch-ca.crt \
+  --fleet-server-cert=/path/to/fleet-server.crt \
+  --fleet-server-cert-key=/path/to/fleet-server.key \
+  --fleet-server-port=8220</code>
+</inline>
+<text>Then enroll another Elastic Agent into the Fleet Server started in the previous example:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent enroll --url=https://fleet-server:8220 \
+  --enrollment-token=NEFmVllaa0JLRXhKebVKVTR5TTI6N2JaVlJpSGpScmV0ZUVnZVlRUExFQQ== \
+  --certificate-authorities=/path/to/ca.crt</code>
+</inline>
+<text>Replace an Elastic Agent enrolled in Fleet Server with a specific agent ID and a replacement token:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent enroll \
+  --url=https://fleet-server:8220 \
+  --enrollment-token=ENROLLMENT_TOKEN_HASH \
+  --id=MY_AGENT_ID \
+  --replace-token=REPLACEMENT_TOKEN_HASH</code>
+</inline>
+<section_header_level_1>elastic-agent help</section_header_level_1>
+<text>Show help for a specific command.</text>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent help <command> [--help] [global-flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>command</code>
+</inline>
+<text>The name of the command.</text>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>help</code>
+<text>command.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Example</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent help enroll</code>
+</inline>
+<section_header_level_1>elastic-agent inspect</section_header_level_1>
+<text>Show the current Elastic Agent configuration. Use this command to verify and troubleshoot the configuration that Elastic Agent is using, including variable substitution and the computed components model.</text>
+<text>If no flags are specified, the command shows the full Elastic Agent configuration. By default, variable substitution is not performed, and the raw configuration is displayed.</text>
+<inline><text>Use the</text>
+<code><_unknown_>--variables</code>
+<text>flag to enable variable substitution. The first set of computed variables are used when only the</text>
+<code><_unknown_>--variables</code>
+<text>flag is defined. This can prevent some of the dynamic providers like Kubernetes and Docker from providing all the possible variables they could have discovered if given more time. Use the</text>
+<code><_unknown_>--variables-wait</code>
+<text>flag to specify an amount of time to wait for variable discovery before using the variables for the configuration.</text>
+</inline>
+<inline><text>Use the</text>
+<code><_unknown_>components</code>
+<text>subcommand to view the components model. Components represent individual processes running underneath Elastic Agent, such as Filebeat or Endpoint Security. Units represent discrete configuration units within a component, such as Filebeat inputs or Metricbeat modules.</text>
+</inline>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect [--variables]
+                      [--monitoring]
+                      [--variables-wait <duration>]
+                      [--help]
+                      [global-flags]
+elastic-agent inspect components [--show-config]
+                                 [--show-spec]
+                                 [--variables-wait <duration>]
+                                 [--help]
+                                 [<component_id>]
+                                 [<component_id>/<unit_id>]</code>
+</inline>
+<section_header_level_2>Available commands</section_header_level_2>
+<inline><code><_unknown_>components</code>
+</inline>
+<inline><text>Display the generated components model for the current configuration. Variable substitution is always performed when computing the components model and cannot be disabled. By default, only the first set of computed variables are used. Use the</text>
+<code><_unknown_>--variables-wait</code>
+<text>flag to allow more time for dynamic providers to discover variables.</text>
+</inline>
+<text>This command accepts the following arguments and flags:</text>
+<inline><code><_unknown_><component_id></code>
+</inline>
+<inline><text>Select a specific component by its ID. Only that component and all its units are returned. Use</text>
+<code><_unknown_>elastic-agent inspect components</code>
+<text>without an ID to see all available component IDs. Configuration for units is not shown by default; use</text>
+<code><_unknown_>--show-config</code>
+<text>to display it.</text>
+</inline>
+<inline><code><_unknown_><component_id>/<unit_id></code>
+</inline>
+<text>Select a specific unit inside a component by specifying both the component ID and unit ID separated by a forward slash. In this mode, the unit configuration is shown by default.</text>
+<inline><code><_unknown_>--show-config</code>
+</inline>
+<inline><text>Display the configuration for all units. By default, unit configuration is hidden unless you select a specific unit using the</text>
+<code><_unknown_><component_id>/<unit_id></code>
+<text>format.</text>
+</inline>
+<inline><code><_unknown_>--show-spec</code>
+</inline>
+<text>Display the input/output runtime specification for a component. By default, the runtime specification is hidden.</text>
+<inline><code><_unknown_>--variables-wait <duration></code>
+</inline>
+<text>Wait the specified amount of time for variable discovery before computing the components model. This is useful when using dynamic providers like Kubernetes or Docker that may need additional time to discover all available variables.</text>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--variables</code>
+</inline>
+<text>Render the configuration with variables substituted. When not specified, the raw configuration is displayed without variable substitution.</text>
+<inline><code><_unknown_>--monitoring</code>
+</inline>
+<inline><text>Include the monitoring configuration in the output. This option implies</text>
+<code><_unknown_>--variables</code>
+<text>, as the monitoring configuration requires variable substitution.</text>
+</inline>
+<inline><code><_unknown_>--variables-wait <duration></code>
+</inline>
+<inline><text>Wait the specified amount of time for variable discovery before performing substitution. This is useful when using dynamic providers like Kubernetes or Docker that may need additional time to discover all available variables. Implies</text>
+<code><_unknown_>--variables</code>
+<text>. For example,</text>
+<code><_unknown_>--variables-wait 30s</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>inspect</code>
+<text>command.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<text>Show the raw Elastic Agent configuration without variable substitution:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect</code>
+</inline>
+<text>Show the configuration with variables substituted:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect --variables</code>
+</inline>
+<text>Show the configuration with variables substituted, waiting 30 seconds for dynamic providers to discover variables:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect --variables-wait 30s</code>
+</inline>
+<text>Show the configuration including monitoring settings:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect --monitoring</code>
+</inline>
+<text>Display all components:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect components</code>
+</inline>
+<text>Display all components with their unit configurations:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect components --show-config</code>
+</inline>
+<text>Display a specific component by ID:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect components log-default</code>
+</inline>
+<text>Display a specific component with its runtime specification:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect components log-default --show-spec</code>
+</inline>
+<text>Display a specific unit inside a component:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect components log-default/log-default</code>
+</inline>
+<text>Wait 30 seconds for dynamic providers before computing components:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent inspect components --variables-wait 30s</code>
+</inline>
+<section_header_level_1>elastic-agent privileged</section_header_level_1>
+<inline><text>Run Elastic Agent with full superuser privileges. This is the usual, default running mode for Elastic Agent. The</text>
+<code><_unknown_>privileged</code>
+<text>command allows you to switch back to running an agent with full administrative privileges when you have been running it in</text>
+<code><_unknown_>unprivileged</code>
+<text>mode.</text>
+</inline>
+<inline><text>Refer to</text>
+<text>Run Elastic Agent without administrative privileges</text>
+<text>for more detail.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent privileged</code>
+</inline>
+<section_header_level_1>elastic-agent install</section_header_level_1>
+<text>Install Elastic Agent permanently on the system and manage it by using the systemâs service manager. The agent will start automatically after installation is complete. On Linux (tar package), this command requires a system and service manager like systemd.</text>
+<text>Important</text>
+<inline><text>If you installed Elastic Agent from a DEB or RPM package, the</text>
+<code><_unknown_>install</code>
+<text>command will skip the installation itself and function as an alias of the</text>
+<code><_unknown_>enroll</code>
+<text>command</text>
+<text>instead. After an upgrade of the Elastic Agent using DEB or RPM the Elastic Agent service needs to be restarted.</text>
+</inline>
+<inline><text>You must run this command as the root user (or Administrator on Windows) to write files to the correct locations. This command overwrites the</text>
+<code><_unknown_>elastic-agent.yml</code>
+<text>file in the agent directory.</text>
+</inline>
+<inline><text>The syntax for running this command varies by platform. As well, various flavors of the agent install package are available, allowing you to control the installed package size on disk and the set of included components. For platform-specific examples and for details about the available flavors, refer to</text>
+<text>Install Elastic Agents</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><text>To install the Elastic Agent as a service, enroll it in Fleet, and start the</text>
+<code><_unknown_>elastic-agent</code>
+<text>service:</text>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install --url <string>
+                      --enrollment-token <string>
+                      [--base-path <string>]
+                      [--ca-sha256 <string>]
+                      [--certificate-authorities <string>]
+                      [--daemon-timeout <duration>]
+                      [--delay-enroll]
+                      [--elastic-agent-cert <string>]
+                      [--elastic-agent-cert-key <string>]
+                      [--elastic-agent-cert-key-passphrase <string>]
+                      [--force]
+                      [--header <strings>]
+                      [--help]
+                      [--insecure ]
+                      [--non-interactive]
+                      [--privileged]
+                      [--proxy-disabled]
+                      [--proxy-header <strings>]
+                      [--proxy-url <string>]
+                      [--staging <string>]
+                      [--tag <string>]
+                      [--unprivileged]
+                      [global-flags]</code>
+</inline>
+<inline><text>To install the Elastic Agent as a service, enroll it in Fleet, and start a</text>
+<code><_unknown_>fleet-server</code>
+<text>process alongside the</text>
+<code><_unknown_>elastic-agent</code>
+<text>service:</text>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install --fleet-server-es <string>
+                      --fleet-server-service-token <string>
+                      [--fleet-server-service-token-path <string>]
+                      [--base-path <string>]
+                      [--ca-sha256 <string>]
+                      [--certificate-authorities <string>]
+                      [--daemon-timeout <duration>]
+                      [--delay-enroll]
+                      [--elastic-agent-cert <string>]
+                      [--elastic-agent-cert-key <string>]
+                      [--elastic-agent-cert-key-passphrase <string>]
+                      [--fleet-server-cert <string>] [--fleet-server-cert-key <string>]
+                      [--fleet-server-cert-key-passphrase <string>]
+                      [--fleet-server-client-auth <string>]
+                      [--fleet-server-es-ca <string>]
+                      [--fleet-server-es-ca-trusted-fingerprint <string>] [--fleet-server-es-cert <string>]
+                      [--fleet-server-es-cert-key <string>]
+                      [--fleet-server-es-insecure]
+                      [--fleet-server-host <string>]
+                      [--fleet-server-policy <string>]
+                      [--fleet-server-port <uint16>]
+                      [--fleet-server-timeout <duration>]
+                      [--force]
+                      [--header <strings>]
+                      [--help]
+                      [--non-interactive]
+                      [--privileged]
+                      [--proxy-disabled]
+                      [--proxy-header <strings>]
+                      [--proxy-url <string>]
+                      [--staging <string>]
+                      [--tag <string>]
+                      [--unprivileged]
+                      [--url <string>] [global-flags]</code>
+</inline>
+<ordered_list><list_item><inline><text>If no</text>
+<code><_unknown_>fleet-server-cert*</code>
+<text>flags are specified, Elastic Agent auto-generates a self-signed certificate with the hostname of the machine. Remote Elastic Agents enrolling into a Fleet Server with self-signed certificates must specify the</text>
+<code><_unknown_>--insecure</code>
+<text>flag.</text>
+</inline></list_item>
+<list_item>Required when using self-signed certificate on Elasticsearch side.</list_item>
+<list_item><inline><text>Required when enrolling in a Fleet Server with custom certificates. The URL must match the DNS name used to generate the certificate specified by</text>
+<code><_unknown_>--fleet-server-cert</code>
+<text>.</text>
+</inline></list_item>
+</ordered_list>
+<inline><text>For more information about custom certificates, refer to</text>
+<text>Configure SSL/TLS for self-managed Fleet Servers</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--base-path <string></code>
+</inline>
+<inline><text>Install Elastic Agent in a location other than the</text>
+<text>default</text>
+<text>. Specify the custom base path for the install.</text>
+</inline>
+<inline><text>The</text>
+<code><_unknown_>--base-path</code>
+<text>option is not currently supported with</text>
+<text>Elastic Defend</text>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--ca-sha256 <string></code>
+</inline>
+<text>Comma-separated list of certificate authority hash pins used for certificate verification.</text>
+<inline><code><_unknown_>--certificate-authorities <string></code>
+</inline>
+<text>Comma-separated list of root certificates used for server verification.</text>
+<inline><code><_unknown_>--daemon-timeout <duration></code>
+</inline>
+<text>Timeout waiting for Elastic Agent daemon.</text>
+<inline><code><_unknown_>--delay-enroll</code>
+</inline>
+<text>Delays enrollment to occur on first start of the Elastic Agent service. This setting is useful when you donât want the Elastic Agent to enroll until the next reboot or manual start of the service, for example, when youâre preparing an image that includes Elastic Agent.</text>
+<inline><code><_unknown_>--elastic-agent-cert</code>
+</inline>
+<text>Certificate to use as the client certificate for the Elastic Agent's connections to Fleet Server.</text>
+<inline><code><_unknown_>--elastic-agent-cert-key</code>
+</inline>
+<text>Private key to use as for the Elastic Agent's connections to Fleet Server.</text>
+<inline><code><_unknown_>--elastic-agent-cert-key-passphrase</code>
+</inline>
+<text>The path to the file that contains the passphrase for the mutual TLS private key that Elastic Agent will use to connect to Fleet Server. The file must only contain the characters of the passphrase, no newline or extra non-printing characters.</text>
+<inline><text>This option is only used if the</text>
+<code><_unknown_>--elastic-agent-cert-key</code>
+<text>is encrypted and requires a passphrase to use.</text>
+</inline>
+<inline><code><_unknown_>--enrollment-token <string></code>
+</inline>
+<text>Enrollment token to use to enroll Elastic Agent into Fleet. You can use the same enrollment token for multiple agents.</text>
+<inline><code><_unknown_>--fleet-server-cert <string></code>
+</inline>
+<text>Certificate to use for exposed Fleet Server HTTPS endpoint.</text>
+<inline><code><_unknown_>--fleet-server-cert-key <string></code>
+</inline>
+<text>Private key to use for exposed Fleet Server HTTPS endpoint.</text>
+<inline><code><_unknown_>--fleet-server-cert-key-passphrase <string></code>
+</inline>
+<text>Path to passphrase file for decrypting Fleet Server's private key if an encrypted private key is used.</text>
+<inline><code><_unknown_>--fleet-server-client-auth <string></code>
+</inline>
+<inline><text>One of</text>
+<code><_unknown_>none</code>
+<text>,</text>
+<code><_unknown_>optional</code>
+<text>, or</text>
+<code><_unknown_>required</code>
+<text>. Defaults to</text>
+<code><_unknown_>none</code>
+<text>. Fleet Server's</text>
+<code><_unknown_>client_authentication</code>
+<text>option for client mTLS connections. If</text>
+<code><_unknown_>optional</code>
+<text>, or</text>
+<code><_unknown_>required</code>
+<text>is specified, client certificates are verified using CAs specified in the</text>
+<code><_unknown_>--certificate-authorities</code>
+<text>flag.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-es <string></code>
+</inline>
+<text>Start a Fleet Server process when Elastic Agent is started, and connect to the specified Elasticsearch URL.</text>
+<inline><code><_unknown_>--fleet-server-es-ca <string></code>
+</inline>
+<inline><text>Path to certificate authority file to use to communicate with Elasticsearch. This is an alternative to using</text>
+<code><_unknown_>--fleet-server-es-ca-trusted-fingerprint</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-es-ca-trusted-fingerprint <string></code>
+</inline>
+<inline><text>The SHA-256 fingerprint (hash) of a certificate authority that is present in the certificate chain sent by Elasticsearch during the TLS handshake. If this certificate is found in the chain, it will be added to the trusted CAs. This is an alternative to using</text>
+<code><_unknown_>--fleet-server-es-ca</code>
+<text>to provide a CA certificate file. For more information, refer to</text>
+<text>Using certificate fingerprints</text>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-es-cert</code>
+</inline>
+<text>The path to the client certificate that Fleet Server will use when connecting to Elasticsearch.</text>
+<inline><code><_unknown_>--fleet-server-es-cert-key</code>
+</inline>
+<text>The path to the private key that Fleet Server will use when connecting to Elasticsearch.</text>
+<inline><code><_unknown_>--fleet-server-es-insecure</code>
+</inline>
+<text>Allows fleet server to connect to Elasticsearch in the following situations:</text>
+<unordered_list><list_item>When connecting to an HTTP server.</list_item>
+<list_item>When connecting to an HTTPs server and the certificate chain cannot be verified. The content is encrypted, but the certificate is not verified.</list_item>
+</unordered_list>
+<text>When this flag is used the certificate verification is disabled.</text>
+<inline><code><_unknown_>--fleet-server-host <string></code>
+</inline>
+<text>Fleet Server HTTP binding host (overrides the policy).</text>
+<inline><code><_unknown_>--fleet-server-policy <string></code>
+</inline>
+<text>Used when starting a self-managed Fleet Server to allow a specific policy to be used.</text>
+<inline><code><_unknown_>--fleet-server-port <uint16></code>
+</inline>
+<text>Fleet Server HTTP binding port (overrides the policy).</text>
+<inline><code><_unknown_>--fleet-server-service-token <string></code>
+</inline>
+<inline><text>Service token to use for communication with Elasticsearch. Mutually exclusive with</text>
+<code><_unknown_>--fleet-server-service-token-path</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-service-token-path <string></code>
+</inline>
+<inline><text>Service token file to use for communication with Elasticsearch. Mutually exclusive with</text>
+<code><_unknown_>--fleet-server-service-token</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--fleet-server-timeout <duration></code>
+</inline>
+<text>Timeout waiting for Fleet Server to be ready to start enrollment.</text>
+<inline><code><_unknown_>--force</code>
+</inline>
+<text>Force overwrite of current configuration without prompting for confirmation. This flag is helpful when using automation software or scripted deployments.</text>
+<text>Note</text>
+<inline><text>If the Elastic Agent is already installed on the host, using</text>
+<code><_unknown_>--force</code>
+<text>may result in unpredictable behavior with duplicate Elastic Agents appearing in Fleet.</text>
+</inline>
+<inline><code><_unknown_>--header <strings></code>
+</inline>
+<text>Headers used in communication with elasticsearch.</text>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>enroll</code>
+<text>command.</text>
+</inline>
+<inline><code><_unknown_>--insecure</code>
+</inline>
+<text>Allow the Elastic Agent to connect to Fleet Server over insecure connections. This setting is required in the following situations:</text>
+<unordered_list><list_item>When connecting to an HTTP server. The API keys are sent in clear text.</list_item>
+<list_item>When connecting to an HTTPs server and the certificate chain cannot be verified. The content is encrypted, but the certificate is not verified.</list_item>
+<list_item>When using self-signed certificates generated by Elastic Agent.</list_item>
+</unordered_list>
+<text>We strongly recommend that you use a secure connection.</text>
+<inline><code><_unknown_>--non-interactive</code>
+</inline>
+<text>Install Elastic Agent in a non-interactive mode. This flag is helpful when using automation software or scripted deployments. If Elastic Agent is already installed on the host, the installation will terminate.</text>
+<inline><code><_unknown_>--privileged</code>
+</inline>
+<inline><text>Run Elastic Agent with full superuser privileges. This is the usual, default running mode for Elastic Agent. The</text>
+<code><_unknown_>--privileged</code>
+<text>option allows you to switch back to running an agent with full administrative privileges when you have been running it in</text>
+<code><_unknown_>unprivileged</code>
+<text>.</text>
+</inline>
+<inline><text>See the</text>
+<code><_unknown_>--unprivileged</code>
+<text>option and</text>
+<text>Run Elastic Agent without administrative privileges</text>
+<text>for more detail.</text>
+</inline>
+<inline><code><_unknown_>--proxy-disabled</code>
+</inline>
+<text>Disable proxy support including environment variables.</text>
+<inline><code><_unknown_>--proxy-header <strings></code>
+</inline>
+<text>Proxy headers used with CONNECT request.</text>
+<inline><code><_unknown_>--proxy-url <string></code>
+</inline>
+<text>Configures the proxy URL.</text>
+<inline><code><_unknown_>--staging <string></code>
+</inline>
+<text>Configures agent to download artifacts from a staging build.</text>
+<inline><code><_unknown_>--tag <strings></code>
+</inline>
+<text>A comma-separated list of tags to apply to Fleet-managed Elastic Agents. You can use these tags to filter the list of agents in Fleet.</text>
+<text>Note</text>
+<text>Currently, there is no way to remove or edit existing tags. To change the tags, you must unenroll the Elastic Agent, then re-enroll it using new tags.</text>
+<inline><code><_unknown_>--unprivileged</code>
+</inline>
+<inline><text>Run Elastic Agent without full superuser privileges. This option is useful in organizations that limit</text>
+<code><_unknown_>root</code>
+<text>access on Linux or macOS systems, or</text>
+<code><_unknown_>admin</code>
+<text>access on Windows systems. For details and limitations for running Elastic Agent in this mode, refer to</text>
+<text>Run Elastic Agent without administrative privileges</text>
+<text>.</text>
+</inline>
+<inline><text>Changing to</text>
+<code><_unknown_>unprivileged</code>
+<text>mode is prevented if the agent is currently enrolled in a policy that includes an integration that requires administrative access, such as the Elastic Defend integration.</text>
+</inline>
+<text>To run Elastic Agent without superuser privileges as a pre-existing user or group, for instance under an Active Directory account, you can specify the user or group, and the password to use.</text>
+<text>For example:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install --unprivileged  --user="my.path\username" --password="mypassword"</code>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install --unprivileged  --group="my.path\groupname" --password="mypassword"</code>
+</inline>
+<inline><code><_unknown_>--url <string></code>
+</inline>
+<text>Fleet Server URL to use to enroll the Elastic Agent into Fleet.</text>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<inline><text>Install the Elastic Agent as a service, enroll it in Fleet, and start the</text>
+<code><_unknown_>elastic-agent</code>
+<text>service:</text>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install \
+  --url=https://cedd4e0e21e240b4s2bbbebdf1d6d52f.fleet.eu-west-1.aws.cld.elstc.co:443 \
+  --enrollment-token=NEFmVllaa0JLRXhKebVKVTR5TTI6N2JaVlJpSGpScmV0ZUVnZVlRUExFQQ==</code>
+</inline>
+<inline><text>Install the Elastic Agent as a service, enroll it in Fleet, and start a</text>
+<code><_unknown_>fleet-server</code>
+<text>process alongside the</text>
+<code><_unknown_>elastic-agent</code>
+<text>service:</text>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install --fleet-server-es=http://elasticsearch:9200 \
+  --fleet-server-service-token=AbEAAdesYXN1abMvZmxlZXQtc2VldmVyL3Rva2VuLTE2MTkxMzg3MzIzMTg7dzEta0JDTmZUcGlDTjlwRmNVTjNVQQ \
+  --fleet-server-policy=a35fd620-26f6-11ec-8bd9-3374690f57b6</code>
+</inline>
+<text>Start Elastic Agent with Fleet Server (running on a custom CA). This example assumes youâve generated the certificates with the following names:</text>
+<unordered_list><list_item><inline><code><_unknown_>ca.crt</code>
+<text>: Root CA certificate</text>
+</inline></list_item>
+<list_item><inline><code><_unknown_>fleet-server.crt</code>
+<text>: Fleet Server certificate</text>
+</inline></list_item>
+<list_item><inline><code><_unknown_>fleet-server.key</code>
+<text>: Fleet Server private key</text>
+</inline></list_item>
+<list_item><inline><code><_unknown_>elasticsearch-ca.crt</code>
+<text>: CA certificate to use to connect to Elasticsearch</text>
+</inline></list_item>
+</unordered_list>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install \
+  --url=https://fleet-server:8220 \
+  --fleet-server-es=https://elasticsearch:9200 \
+  --fleet-server-service-token=AAEBAWVsYXm0aWMvZmxlZXQtc2XydmVyL3Rva2VuLTE2MjM4OTAztDU1OTQ6dllfVW1mYnFTVjJwTC2ZQ0EtVnVZQQ \
+  --fleet-server-policy=a35fd520-26f5-11ec-8bd9-3374690g57b6 \
+  --certificate-authorities=/path/to/ca.crt \
+  --fleet-server-es-ca=/path/to/elasticsearch-ca.crt \
+  --fleet-server-cert=/path/to/fleet-server.crt \
+  --fleet-server-cert-key=/path/to/fleet-server.key \
+  --fleet-server-port=8220</code>
+</inline>
+<text>Then install another Elastic Agent and enroll it into the Fleet Server started in the previous example:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent install --url=https://fleet-server:8220 \
+  --enrollment-token=NEFmVllaa0JLRXhKebVKVTR5TTI6N2JaVlJpSGpScmV0ZUVnZVlRUExFQQ== \
+  --certificate-authorities=/path/to/ca.crt</code>
+</inline>
+<section_header_level_1>elastic-agent otel</section_header_level_1>
+<inline><text>Run Elastic Agent as an</text>
+<text>Elastic Distribution of OpenTelemetry Collector (EDOT Collector)</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent otel [flags]
+elastic-agent otel [command]</code>
+</inline>
+<text>Note</text>
+<inline><text>You can also run the</text>
+<code><_unknown_>./otelcol</code>
+<text>command, which calls</text>
+<code><_unknown_>./elastic-agent otel</code>
+<text>and passes any arguments to it.</text>
+</inline>
+<section_header_level_2>Available commands</section_header_level_2>
+<inline><code><_unknown_>validate</code>
+</inline>
+<text>Validates the OpenTelemetry collector configuration without running the collector.</text>
+<section_header_level_2>Flags</section_header_level_2>
+<inline><code><_unknown_>--config=file:/path/to/first --config=file:path/to/second</code>
+</inline>
+<inline><text>Locations to the config file(s). Only a single location can be set per flag entry, for example</text>
+<code><_unknown_>--config=file:/path/to/first --config=file:path/to/second</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--feature-gates flag</code>
+</inline>
+<inline><text>Comma-delimited list of feature gate identifiers. Prefix with</text>
+<code><_unknown_>-</code>
+<text>to disable the feature. Prefixing with</text>
+<code><_unknown_>+</code>
+<text>or no prefix will enable the feature.</text>
+</inline>
+<inline><code><_unknown_>-h, --help</code>
+</inline>
+<inline><text>Get help for the</text>
+<code><_unknown_>otel</code>
+<text>sub-command. Use</text>
+<code><_unknown_>elastic-agent otel [command] --help</code>
+<text>for more information about a command.</text>
+</inline>
+<inline><code><_unknown_>--set string</code>
+</inline>
+<inline><text>Set an arbitrary component config property. The component has to be defined in the configuration file and the flag has a higher precedence. Array configuration properties are overridden and maps are joined. For example,</text>
+<code><_unknown_>--set=processors::batch::timeout=2s</code>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<inline><text>Run Elastic Agent as an EDOT Collector using the supplied</text>
+<code><_unknown_>otel.yml</code>
+<text>configuration file.</text>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>./elastic-agent otel --config otel.yml</code>
+</inline>
+<inline><text>Change the default verbosity setting in the Elastic Agent EDOT Collector configuration from</text>
+<code><_unknown_>detailed</code>
+<text>to</text>
+<code><_unknown_>normal</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>./elastic-agent otel --config otel.yml --set "exporters::debug::verbosity=normal"</code>
+</inline>
+<section_header_level_1>elastic-agent restart</section_header_level_1>
+<text>Restart the currently running Elastic Agent daemon.</text>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent restart [--help] [global-flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>restart</code>
+<text>command.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent restart</code>
+</inline>
+<section_header_level_1>elastic-agent run</section_header_level_1>
+<inline><text>Start the</text>
+<code><_unknown_>elastic-agent</code>
+<text>process.</text>
+</inline>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent run [global-flags]</code>
+</inline>
+<section_header_level_2>Global flags</section_header_level_2>
+<inline><text>These flags are valid whenever you run</text>
+<code><_unknown_>elastic-agent</code>
+<text>on the command line.</text>
+</inline>
+<inline><code><_unknown_>-c <string></code>
+</inline>
+<inline><text>The configuration file to use. If not specified, Elastic Agent uses</text>
+<code><_unknown_>{path.config}/elastic-agent.yml</code>
+<text>.</text>
+</inline>
+<inline><code><_unknown_>--e</code>
+</inline>
+<text>Log to stderr and disable syslog/file output.</text>
+<inline><code><_unknown_>--environment <environmentVar></code>
+</inline>
+<text>The environment in which the agent will run.</text>
+<inline><code><_unknown_>--path.config <string></code>
+</inline>
+<text>The directory where Elastic Agent looks for its configuration file. The default varies by platform.</text>
+<inline><code><_unknown_>--path.home <string></code>
+</inline>
+<inline><text>The root directory of Elastic Agent.</text>
+<code><_unknown_>path.home</code>
+<text>determines the location of the configuration files and data directory.</text>
+</inline>
+<text>If not specified, Elastic Agent uses the current working directory.</text>
+<inline><code><_unknown_>--path.logs <string></code>
+</inline>
+<text>Path to the log output for Elastic Agent. The default varies by platform.</text>
+<inline><code><_unknown_>--v</code>
+</inline>
+<text>Set log level to INFO.</text>
+<section_header_level_2>Example</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent run -c myagentconfig.yml</code>
+</inline>
+<section_header_level_1>elastic-agent status</section_header_level_1>
+<inline><text>Returns the current status of the running Elastic Agent daemon and of each process in the Elastic Agent.  The last known status of the Fleet server is also returned. The</text>
+<code><_unknown_>output</code>
+<text>option controls the level of detail and formatting of the information.</text>
+</inline>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent status [--output <string>]
+                     [--help]
+                     [global-flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--output <string></code>
+</inline>
+<inline><text>Output the status information in either</text>
+<code><_unknown_>human</code>
+<text>(the default),</text>
+<code><_unknown_>full</code>
+<text>,</text>
+<code><_unknown_>json</code>
+<text>, or</text>
+<code><_unknown_>yaml</code>
+<text>.</text>
+<code><_unknown_>human</code>
+<text>returns limited information when Elastic Agent is in the</text>
+<code><_unknown_>HEALTHY</code>
+<text>state. If any components or units are not in</text>
+<code><_unknown_>HEALTHY</code>
+<text>state, then full details are displayed for that component or unit.</text>
+<code><_unknown_>full</code>
+<text>,</text>
+<code><_unknown_>json</code>
+<text>and</text>
+<code><_unknown_>yaml</code>
+<text>always return the full status information.  Components map to individual processes running underneath Elastic Agent, for example Filebeat or Endpoint Security. Units map to discrete configuration units within that process, for example Filebeat inputs or Metricbeat modules.</text>
+</inline>
+<inline><text>When the output is</text>
+<code><_unknown_>json</code>
+<text>or</text>
+<code><_unknown_>yaml</code>
+<text>, status codes are returned as numerical values.  The status codes can be mapped using the following table:</text>
+</inline>
+<text>+</text>
+<otsl><ched>Code<ched>Status<nl><fcel>0<fcel><inline><code><_unknown_>STARTING</code>
+</inline><nl><fcel>1<fcel><inline><code><_unknown_>CONFIGURING</code>
+</inline><nl><fcel>2<fcel><inline><code><_unknown_>HEALTHY</code>
+</inline><nl><fcel>3<fcel><inline><code><_unknown_>DEGRADED</code>
+</inline><nl><fcel>4<fcel><inline><code><_unknown_>FAILED</code>
+</inline><nl><fcel>5<fcel><inline><code><_unknown_>STOPPING</code>
+</inline><nl><fcel>6<fcel><inline><code><_unknown_>UPGRADING</code>
+</inline><nl><fcel>7<fcel><inline><code><_unknown_>ROLLBACK</code>
+</inline><nl></otsl>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>status</code>
+<text>command.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent status</code>
+</inline>
+<section_header_level_1>elastic-agent uninstall</section_header_level_1>
+<text>Permanently uninstall Elastic Agent from the system.</text>
+<text>You must run this command as the root user (or Administrator on Windows) to remove files.</text>
+<text>Important</text>
+<inline><text>Be sure to run the</text>
+<code><_unknown_>uninstall</code>
+<text>command from a directory outside of where Elastic Agent is installed.</text>
+</inline>
+<inline><text>For example, on a Windows system the install location is</text>
+<code><_unknown_>C:\Program Files\Elastic\Agent</code>
+<text>. Run the uninstall command from</text>
+<code><_unknown_>C:\Program Files\Elastic</code>
+<text>or</text>
+<code><_unknown_>\tmp</code>
+<text>, or even your default home directory:</text>
+</inline>
+<inline><code><_unknown_></code>
+<code><_unknown_>C:\"Program Files"\Elastic\Agent\elastic-agent.exe uninstall</code>
+</inline>
+<checkbox_selected>macOS</checkbox_selected>
+<text>macOS</text>
+<text>Tip</text>
+<text>You must run this command as the root user.</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>sudo /Library/Elastic/Agent/elastic-agent uninstall</code>
+</inline>
+<checkbox_unselected>Linux</checkbox_unselected>
+<text>Linux</text>
+<text>Tip</text>
+<text>You must run this command as the root user.</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>sudo /opt/Elastic/Agent/elastic-agent uninstall</code>
+</inline>
+<checkbox_unselected>Windows</checkbox_unselected>
+<text>Windows</text>
+<inline><text>Open a PowerShell prompt as an Administrator (right-click the PowerShell icon and select</text>
+<text>Run As Administrator</text>
+<text>).</text>
+</inline>
+<text>From the PowerShell prompt, run:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>C:\"Program Files"\Elastic\Agent\elastic-agent.exe uninstall</code>
+</inline>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent uninstall [--force] [--help] [global-flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--force</code>
+</inline>
+<text>Uninstall Elastic Agent and do not prompt for confirmation. This flag is helpful when using automation software or scripted deployments.</text>
+<inline><code><_unknown_>--skip-fleet-audit</code>
+</inline>
+<text>Skip auditing with the Fleet Server.</text>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>uninstall</code>
+<text>command.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent uninstall</code>
+</inline>
+<section_header_level_1>elastic-agent unprivileged</section_header_level_1>
+<inline><text>Run Elastic Agent without full superuser privileges. This is useful in organizations that limit</text>
+<code><_unknown_>root</code>
+<text>access on Linux or macOS systems, or</text>
+<code><_unknown_>admin</code>
+<text>access on Windows systems. For details and limitations for running Elastic Agent in this mode, refer to</text>
+<text>Run Elastic Agent without administrative privileges</text>
+<text>.</text>
+</inline>
+<inline><text>Changing a running Elastic Agent to</text>
+<code><_unknown_>unprivileged</code>
+<text>mode is prevented if the agent is currently enrolled with a policy that contains the Elastic Defend integration.</text>
+</inline>
+<inline><text>To run Elastic Agent without superuser privileges as a pre-existing user or group, for instance under an Active Directory account, add either a</text>
+<code><_unknown_>--user</code>
+<text>or</text>
+<code><_unknown_>--group</code>
+<text>parameter together with a</text>
+<code><_unknown_>--password</code>
+<text>parameter.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<text>Run Elastic Agent without administrative privileges:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent unprivileged</code>
+</inline>
+<text>Run Elastic Agent without administrative privileges, as a pre-existing user:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent unprivileged --user="my.pathl\username" --password="mypassword"</code>
+</inline>
+<text>Run Elastic Agent without administrative privileges, as a pre-existing group:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent unprivileged --group="my.pathl\groupname" --password="mypassword"</code>
+</inline>
+<section_header_level_1>elastic-agent upgrade</section_header_level_1>
+<text>Upgrade the currently running Elastic Agent to the specified version. This should only be used with agents running in standalone mode. Agents enrolled in Fleet should be upgraded through Fleet.</text>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent upgrade <version> [--source-uri <string>] [--help] [flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>version</code>
+</inline>
+<text>The version of Elastic Agent to upgrade to.</text>
+<inline><code><_unknown_>--source-uri <string></code>
+</inline>
+<text>The source URI to download the new version from. By default, Elastic Agent uses the Elastic Artifacts URL.</text>
+<inline><text>A file path is also accepted here. Example:</text>
+<code><_unknown_>file://<file path></code>
+</inline>
+<inline><code><_unknown_>--skip-verify</code>
+</inline>
+<text>Skip the package verification process. This option is not recommended as it is insecure.</text>
+<inline><code><_unknown_>--pgp-path <string></code>
+</inline>
+<text>Use a locally stored copy of the PGP key to verify the upgrade package.</text>
+<inline><code><_unknown_>--pgp-uri <string></code>
+</inline>
+<text>Use the specified online PGP key to verify the upgrade package.</text>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>upgrade</code>
+<text>command.</text>
+</inline>
+<inline><text>For details about using the</text>
+<code><_unknown_>--skip-verify</code>
+<text>,</text>
+<code><_unknown_>--pgp-path <string></code>
+<text>, and</text>
+<code><_unknown_>--pgp-uri <string></code>
+<text>package verification options, refer to</text>
+<text>Verifying Elastic Agent package signatures</text>
+<text>.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Examples</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent upgrade 7.10.1</code>
+</inline>
+<section_header_level_1>elastic-agent logs</section_header_level_1>
+<text>Show the logs of the running Elastic Agent.</text>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent logs [--follow] [--number <int>] [--component <string>] [--no-color] [--help] [global-flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--follow</code>
+<text>or</text>
+<code><_unknown_>-f</code>
+</inline>
+<inline><text>Follow log updates until the command is interrupted (for example with</text>
+<code><_unknown_>Ctrl-C</code>
+<text>).</text>
+</inline>
+<inline><code><_unknown_>--number <int></code>
+<text>or</text>
+<code><_unknown_>-n <int></code>
+</inline>
+<text>How many lines of logs to print. If logs following is enabled, affects the initial output.</text>
+<inline><code><_unknown_>--component <string></code>
+<text>or</text>
+<code><_unknown_>-C <string></code>
+</inline>
+<text>Filter logs based on the component name.</text>
+<inline><code><_unknown_>--no-color</code>
+</inline>
+<text>Disable color based on log-level of each entry.</text>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>logs</code>
+<text>command.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Example</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent logs -n 100 -f -C "system/metrics-default"</code>
+</inline>
+<section_header_level_1>elastic-agent version</section_header_level_1>
+<text>Show the version of Elastic Agent.</text>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent version [--help] [global-flags]</code>
+</inline>
+<section_header_level_2>Options</section_header_level_2>
+<inline><code><_unknown_>--help</code>
+</inline>
+<inline><text>Show help for the</text>
+<code><_unknown_>version</code>
+<text>command.</text>
+</inline>
+<inline><text>For more flags, see</text>
+<text>Global flags</text>
+<text>.</text>
+</inline>
+<section_header_level_2>Example</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent version</code>
+</inline>
+<section_header_level_1>elastic-agent windows</section_header_level_1>
+<text>Windows-specific subcommands for managing Elastic Agent registry entries. These commands require Administrator privileges.</text>
+<section_header_level_2>Synopsis</section_header_level_2>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent windows [command]</code>
+</inline>
+<section_header_level_2>Available commands</section_header_level_2>
+<inline><code><_unknown_>registry update</code>
+</inline>
+<text>Creates or updates the Elastic Agent entry in the Windows Add/Remove Programs list and configures the registry key access control list (ACL) so unprivileged upgrades can update it automatically. Also removes any stale MSI-generated entries. Run this command once after upgrading from a version earlier than 9.4.0 in unprivileged mode.</text>
+<inline><code><_unknown_>registry remove</code>
+</inline>
+<text>Removes the Elastic Agent entry from the Windows Add/Remove Programs list. Run this command when you need to manually clean up the registry entry, such as during troubleshooting or before a manual uninstall.</text>
+<section_header_level_2>Examples</section_header_level_2>
+<text>Create or update the Elastic Agent entry in the Windows Add/Remove Programs list:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent windows registry update</code>
+</inline>
+<text>Remove the Elastic Agent entry from the Windows Add/Remove Programs list:</text>
+<inline><code><_unknown_></code>
+<code><_unknown_>elastic-agent windows registry remove</code>
+</inline>
+</doctag>
