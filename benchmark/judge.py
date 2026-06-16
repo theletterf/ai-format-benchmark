@@ -12,7 +12,7 @@ import tiktoken
 from openai import OpenAI
 
 GITHUB_MODELS_BASE_URL = "https://models.inference.ai.azure.com"
-DEFAULT_MODEL = "gpt-4o-mini-2024-07-18"
+DEFAULT_MODEL = "gpt-4o-mini"
 
 _ENCODING = tiktoken.get_encoding("cl100k_base")
 
