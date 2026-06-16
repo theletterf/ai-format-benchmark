@@ -6,7 +6,7 @@ Usage:
     python benchmark/run.py [--output results.json]
 
 Environment variables:
-    ANTHROPIC_API_KEY   required — add as a repository secret
+    LITELLM_API_KEY     required — add as a repository secret
     BENCHMARK_DOC_URL   override the annotated-MD source URL (optional)
 """
 
@@ -29,9 +29,9 @@ def main() -> None:
     parser.add_argument("--output", default="results.json", help="Output JSON path")
     args = parser.parse_args()
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("LITELLM_API_KEY")
     if not api_key:
-        sys.exit("Error: ANTHROPIC_API_KEY environment variable is not set.")
+        sys.exit("Error: LITELLM_API_KEY environment variable is not set.")
 
     md_url = os.environ.get("BENCHMARK_DOC_URL") or DOC_MD_URL
     client = make_client(api_key)

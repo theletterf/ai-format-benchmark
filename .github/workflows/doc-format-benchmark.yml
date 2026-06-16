@@ -43,7 +43,7 @@ jobs:
       # ------------------------------------------------------------------ #
       - name: Run benchmark
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LITELLM_API_KEY: ${{ secrets.LITELLM_API_KEY }}
           BENCHMARK_DOC_URL: ${{ inputs.doc_url }}
         run: python benchmark/run.py --output results.json
 

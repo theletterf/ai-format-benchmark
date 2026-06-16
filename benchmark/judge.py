@@ -1,18 +1,19 @@
 """
-LLM-based answering and judging via Anthropic API.
+LLM-based answering and judging via LiteLLM (OpenAI-compatible proxy).
 
-Answering model  : claude-haiku-4-5  (fast, cheap; default temperature for variation)
-Judging model    : claude-sonnet-4-6  (stronger; temperature=0 for determinism)
-Token counting   : Anthropic count_tokens API — exact, model-native
+Answering model  : claude-haiku-4-5-20251001  (fast, cheap; default temperature)
+Judging model    : claude-sonnet-4-6           (stronger; temperature=0)
+Token counting   : usage.prompt_tokens from API response — model-native, exact
 
-Each task is sampled N_SAMPLES times; scores are averaged to a float,
-which reduces the effect of single-call judge noise.
+Each task is sampled N_SAMPLES times; scores are averaged to a float.
 """
 
 import json
 import re
 
-import anthropic
+from openai import OpenAI
+
+LITELLM_BASE_URL = "https://elastic.litellm-prod.ai/"
 
 ANSWER_MODEL = "claude-haiku-4-5-20251001"
 JUDGE_MODEL  = "claude-sonnet-4-6"
@@ -50,50 +51,51 @@ Respond with valid JSON only — no markdown, no preamble:
 {{"score": <0|1|2>, "reasoning": "<one concise sentence>"}}"""
 
 
-def make_client(api_key: str) -> anthropic.Anthropic:
-    return anthropic.Anthropic(api_key=api_key)
+def make_client(api_key: str) -> OpenAI:
+    return OpenAI(base_url=LITELLM_BASE_URL, api_key=api_key)
 
 
-def count_doc_tokens(client: anthropic.Anthropic, doc_content: str) -> int:
-    """Count input tokens using Anthropic's count_tokens API (exact, model-native)."""
-    response = client.messages.count_tokens(
+def count_doc_tokens(client: OpenAI, doc_content: str) -> int:
+    """Count input tokens via a minimal API call — LiteLLM returns model-native counts."""
+    response = client.chat.completions.create(
         model=ANSWER_MODEL,
-        system=_ANSWER_SYSTEM,
+        max_tokens=1,
         messages=[
+            {"role": "system", "content": _ANSWER_SYSTEM},
             {
                 "role": "user",
                 "content": (
                     f"<document>\n{doc_content}\n</document>\n\n"
                     "How many steps does this quickstart have?"
                 ),
-            }
+            },
         ],
     )
-    return response.input_tokens
+    return response.usage.prompt_tokens
 
 
 def answer_question(
-    client: anthropic.Anthropic,
+    client: OpenAI,
     doc_content: str,
     question: str,
 ) -> tuple[str, int]:
-    """Return (answer_text, output_tokens). Default temperature for genuine variation."""
-    message = client.messages.create(
+    """Return (answer_text, completion_tokens). Default temperature for genuine variation."""
+    response = client.chat.completions.create(
         model=ANSWER_MODEL,
         max_tokens=512,
-        system=_ANSWER_SYSTEM,
         messages=[
+            {"role": "system", "content": _ANSWER_SYSTEM},
             {
                 "role": "user",
                 "content": f"<document>\n{doc_content}\n</document>\n\n{question}",
-            }
+            },
         ],
     )
-    return message.content[0].text, message.usage.output_tokens
+    return response.choices[0].message.content, response.usage.completion_tokens
 
 
 def judge_answer(
-    client: anthropic.Anthropic,
+    client: OpenAI,
     question: str,
     ground_truth: str,
     answer: str,
@@ -104,14 +106,16 @@ def judge_answer(
         ground_truth=ground_truth,
         answer=answer,
     )
-    message = client.messages.create(
+    response = client.chat.completions.create(
         model=JUDGE_MODEL,
         max_tokens=256,
         temperature=0,
-        system=_JUDGE_SYSTEM,
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "system", "content": _JUDGE_SYSTEM},
+            {"role": "user", "content": prompt},
+        ],
     )
-    raw = message.content[0].text.strip()
+    raw = response.choices[0].message.content.strip()
     m = re.search(r"\{.*?\}", raw, re.DOTALL)
     if m:
         try:
@@ -122,7 +126,7 @@ def judge_answer(
 
 
 def evaluate_format(
-    client: anthropic.Anthropic,
+    client: OpenAI,
     format_name: str,
     doc_content: str,
     tasks: list[dict],
@@ -131,7 +135,7 @@ def evaluate_format(
     Run the full evaluation pipeline for one document format.
     Each task is answered and judged N_SAMPLES times; scores are averaged.
     """
-    print("    counting tokens (Anthropic API)...", flush=True)
+    print("    counting tokens (API)...", flush=True)
     token_count = count_doc_tokens(client, doc_content)
 
     task_results = []
