@@ -15,8 +15,8 @@ from openai import OpenAI
 
 LITELLM_BASE_URL = "https://elastic.litellm-prod.ai/"
 
-ANSWER_MODEL = "claude-haiku-4-5-20251001"
-JUDGE_MODEL  = "claude-sonnet-4-6"
+ANSWER_MODEL = "llm-gateway/claude-haiku-4-5"
+JUDGE_MODEL  = "llm-gateway/claude-sonnet-4-6"
 
 N_SAMPLES = 3
 
