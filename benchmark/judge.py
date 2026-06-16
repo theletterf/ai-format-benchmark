@@ -21,7 +21,7 @@ GITHUB_MODELS_BASE_URL = "https://models.inference.ai.azure.com"
 ANSWER_MODEL = "gpt-4o-mini"
 JUDGE_MODEL  = "gpt-4o"            # strongest model available on GitHub Models
 
-N_SAMPLES = 3                      # answer+judge calls per task per format
+N_SAMPLES = 2                      # GitHub Models: 100 calls/model/day; 4 formats × 10 tasks × 2 = 80
 
 # gpt-4o-mini uses the o200k_base vocabulary (not cl100k_base used by gpt-4)
 _ENCODING = tiktoken.get_encoding("o200k_base")
