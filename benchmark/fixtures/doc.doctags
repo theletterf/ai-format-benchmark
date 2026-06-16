@@ -1,0 +1,101 @@
+<doctag><ordered_list><list_item><inline><text>Elastic Docs</text>
+<text>/</text>
+</inline></list_item>
+<list_item><inline><text>Solutions and use cases</text>
+<text>/</text>
+</inline></list_item>
+<list_item><inline><text>Observability solution</text>
+<text>/</text>
+</inline></list_item>
+<list_item><inline><text>Get started</text>
+<text>/</text>
+</inline></list_item>
+<list_item>OpenTelemetry quickstarts</list_item>
+</ordered_list>
+<checkbox_unselected></checkbox_unselected>
+<title>Quickstart: Ingest custom metrics with EDOT</title>
+<text>Use this quickstart to send custom metrics to Elastic using the Elastic Distribution of the OpenTelemetry Collector (EDOT).</text>
+<text>Youâll install a lightweight EDOT Collector, configure a minimal Open Telemetry Protocol (OTLP) metrics pipeline, and verify the data in Elastic Observability.</text>
+<section_header_level_1>Prerequisites</section_header_level_1>
+<unordered_list><list_item>An Elastic deployment (Serverless, Elastic Cloud Hosted, or self-managed)</list_item>
+<list_item>An Observability project Kibana instance</list_item>
+<list_item>Permissions to create API keys</list_item>
+<list_item>A system to run the EDOT Collector (Docker, host, or VM)</list_item>
+<list_item>Optional: An application that emits OpenTelemetry metrics</list_item>
+</unordered_list>
+<ordered_list><list_item><inline><text>Create an Elastic API key</text>
+<text>In your Elastic Observability deployment:</text>
+</inline></list_item>
+<list_item><ordered_list><list_item><inline><text>Go to</text>
+<text>Management</text>
+<text>></text>
+<text>Stack Management</text>
+<text>></text>
+<text>API keys</text>
+<text>.</text>
+</inline></list_item>
+<list_item>Create a new API key and copy the value.</list_item>
+<list_item>Note your deployment's OTLP ingest endpoint.</list_item>
+</ordered_list></list_item>
+<list_item><inline><text>Run the EDOT Collector with a minimal metrics pipeline</text>
+<text>Update the</text>
+<code><_unknown_>collector-config.yaml</code>
+<text>file with the following Collector configuration to receive OTLP metrics and export them to Elastic:</text>
+<code><_unknown_>receivers: otlp: protocols: http: grpc: processors: batch: {} exporters: otlphttp: endpoint: "<OTLP_ENDPOINT>" headers: Authorization: "ApiKey <YOUR_API_KEY>" service: pipelines: metrics: receivers: [otlp] processors: [batch] exporters: [otlphttp]</code>
+<text>Run the configuration, for example with Docker:</text>
+<code><_unknown_>docker run --rm \ -v $(pwd)/collector-config.yaml:/etc/otel/config.yaml \ -p 4317:4317 -p 4318:4318 \ docker.elastic.co/observability/otel-collector:latest</code>
+</inline></list_item>
+<list_item><inline><text>Optional: Port conflict handling</text>
+<text>If you encounter a port conflict error like:</text>
+<code><_unknown_>bind: address already in use</code>
+<text>Add the following to the</text>
+<code><_unknown_>service</code>
+<text>section:</text>
+<code><_unknown_>service: telemetry: metrics: address: localhost:8889</code>
+<text>You can also verify if the Collector is listening on the correct ports:</text>
+<code><_unknown_>lsof -i :4318 -i :4317</code>
+</inline></list_item>
+<list_item><ordered_list><list_item>Using different port if 8888 is already in use</list_item>
+</ordered_list></list_item>
+<list_item><inline><text>Send a custom metric</text>
+<text>In this Python example, you use an application that emits OTLP metrics. For other languages, refer to the</text>
+<text>contrib OpenTelemetry documentation</text>
+<text>.</text>
+<code><_unknown_>from opentelemetry import metrics from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter from opentelemetry.sdk.metrics import MeterProvider from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader exporter = OTLPMetricExporter(endpoint="http://localhost:4318/v1/metrics") reader = PeriodicExportingMetricReader(exporter) provider = MeterProvider(metric_readers=[reader]) metrics.set_meter_provider(provider) meter = metrics.get_meter("custom-app") temperature = meter.create_observable_gauge( "custom.temperature", callbacks=[lambda options: [metrics.Observation(26.7)]], ) input("Sending metrics periodically... press Enter to stop")</code>
+</inline></list_item>
+<list_item><inline><text>Verify metrics in Elastic Observability</text>
+<text>In Kibana:</text>
+</inline></list_item>
+<list_item><ordered_list><list_item><inline><text>Go to</text>
+<text>Infrastructure</text>
+<text>></text>
+<text>Metrics Explorer</text>
+<text>.</text>
+</inline></list_item>
+<list_item><inline><text>Search for</text>
+<code><_unknown_>custom.temperature</code>
+<text>.</text>
+</inline></list_item>
+<list_item>Visualize or aggregate the metric data.</list_item>
+</ordered_list></list_item>
+</ordered_list>
+<section_header_level_1>Explore your metrics</section_header_level_1>
+<text>You've successfully set up a minimal OTLP metrics pipeline with the EDOT Collector. Your custom metrics are flowing into Elastic Observability and can be visualized in Kibana.</text>
+<text>Now you can:</text>
+<unordered_list><list_item><inline><text>Use</text>
+<text>Metrics Explorer</text>
+<text>to create custom visualizations and dashboards</text>
+</inline></list_item>
+<list_item>Set up alerts based on your custom metrics</list_item>
+<list_item>Aggregate and analyze metric trends over time</list_item>
+</unordered_list>
+<section_header_level_1>Extend your setup</section_header_level_1>
+<text>You can expand your metrics collection setup in several ways:</text>
+<unordered_list><list_item>Add more receivers to collect additional metrics</list_item>
+<list_item>Configure the same Collector to send logs and traces alongside metrics</list_item>
+</unordered_list>
+<inline><text>To learn more, refer to the</text>
+<text>Elastic Distribution of the OpenTelemetry Collector documentation</text>
+<text>.</text>
+</inline>
+</doctag>

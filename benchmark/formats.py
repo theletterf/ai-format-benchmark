@@ -2,17 +2,24 @@
 Fetch and convert the benchmark document into four formats:
 
   annotated_md  — Elastic's rich source Markdown (frontmatter + custom directives)
-  doclang       — DocLang XML conversion (semantic, LLM-optimised)
+  doclang       — DocTags produced by Docling (loaded from committed fixture)
   html          — Main-content HTML extracted from the live web page
   plain_text    — Stripped text baseline (no markup at all)
+
+The doclang fixture is generated once via benchmark/generate_fixture.py and
+committed to the repo so CI never needs Docling as a runtime dependency.
 """
 
+import os
 import re
 from typing import Optional
 
 import requests
 import yaml
 from bs4 import BeautifulSoup
+
+FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+DOCLANG_FIXTURE = os.path.join(FIXTURE_DIR, "doc.doctags")
 
 DOC_MD_URL = (
     "https://www.elastic.co/docs/solutions/observability"
@@ -372,13 +379,24 @@ def strip_to_plain_text(annotated_md: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def load_doclang_fixture() -> str:
+    """Load the committed Docling DocTags fixture."""
+    if not os.path.exists(DOCLANG_FIXTURE):
+        raise FileNotFoundError(
+            f"DocTags fixture not found at {DOCLANG_FIXTURE}. "
+            "Run: python benchmark/generate_fixture.py"
+        )
+    with open(DOCLANG_FIXTURE, encoding="utf-8") as fh:
+        return fh.read()
+
+
 def get_all_formats(
     md_url: str = DOC_MD_URL,
     html_url: str = DOC_HTML_URL,
 ) -> dict[str, str]:
     """
     Return all four benchmark formats keyed by format name.
-    Fetches live documents; raises on network errors.
+    doclang is loaded from the committed fixture; everything else is fetched live.
     """
     print("  Fetching annotated_md...", flush=True)
     annotated_md = fetch_annotated_md(md_url)
@@ -386,8 +404,8 @@ def get_all_formats(
     print("  Fetching html...", flush=True)
     html = fetch_html(html_url)
 
-    print("  Converting → doclang...", flush=True)
-    doclang = convert_to_doclang(annotated_md)
+    print("  Loading doclang fixture (Docling DocTags)...", flush=True)
+    doclang = load_doclang_fixture()
 
     print("  Converting → plain_text...", flush=True)
     plain_text = strip_to_plain_text(annotated_md)
